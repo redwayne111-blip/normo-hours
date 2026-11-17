@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Нормо-часы">
+<meta name="theme-color" content="#0f1a33">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-180.png">
+<title>Нормо-часы</title>
+<style>
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;background:#0f1a33;color:#fff;font:16px -apple-system,system-ui,sans-serif;padding-bottom:90px}
+header{padding:calc(env(safe-area-inset-top) + 16px) 16px 16px;background:#16224a;display:flex;justify-content:space-between;align-items:center}
+header h1{margin:0;font-size:26px}
+.card{background:#16224a;border:2px solid #26346a;border-radius:24px;margin:16px;padding:16px}
+.seg{display:flex;background:#0f1a33;border-radius:16px;padding:6px}
+.seg button{flex:1;background:none;border:0;color:#9fb0e0;font-size:18px;font-weight:600;padding:12px;border-radius:12px}
+.seg button.on{background:#1d2d5e;color:#fff}
+.nav{display:flex;justify-content:space-between;align-items:center;margin:14px 0;font-weight:700;font-size:20px}
+.nav button{background:none;border:0;color:#9fb0e0;font-size:28px;padding:4px 16px}
+.stats{display:flex;gap:10px}
+.stat{flex:1;border-radius:16px;padding:14px 4px;text-align:center;background:#2b2316}
+.stat.g{background:#14301f;color:#7fe3a0}
+.stat b{display:block;font-size:30px}.stat span{color:#9fb0e0;font-size:15px}
+.muted{text-align:center;color:#9fb0e0;margin:12px 0 0}
+.actions{display:flex;gap:12px;margin:0 16px}
+.btn{border:0;border-radius:20px;font-size:19px;font-weight:700;padding:20px 12px;color:#fff;text-align:center;display:block}
+.btn.o{background:#f58d24;flex:1.4}.btn.d{background:#16224a;border:2px solid #26346a;flex:1}
+.add{color:#f58d24;font-weight:700;font-size:20px;margin:20px 16px;background:none;border:0;padding:0}
+.day{display:flex;justify-content:space-between;color:#b4c0e6;font-weight:600;margin:20px 16px 4px;font-size:15px}
+.sal{color:#34c26b;font-weight:600;margin:0 16px 10px}
+.order{background:#16224a;border:2px solid #26346a;border-radius:22px;margin:8px 16px;padding:16px}
+.order .top{display:flex;justify-content:space-between;align-items:center}
+.badge{background:#f58d24;border-radius:20px;padding:6px 14px;font-weight:700}
+.order .car{font-size:20px;color:#b4c0e6;margin:6px 0}
+.order .txt{color:#9fb0e0}.order .sum{color:#34c26b;font-weight:700;margin-top:8px}
+.order img{max-width:100%;border-radius:12px;margin-top:8px}
+.order .del{float:right;background:none;border:0;color:#e55;font-size:15px}
+nav{position:fixed;bottom:0;left:0;right:0;display:flex;background:#0d1530;border-top:1px solid #26346a;padding-bottom:env(safe-area-inset-bottom)}
+nav button{flex:1;background:none;border:0;color:#9fb0e0;font-size:19px;font-weight:700;padding:18px}
+nav button.on{color:#f58d24}
+.modal{position:fixed;inset:0;background:#000a;display:none;align-items:flex-end;z-index:5}
+.modal.show{display:flex}
+.sheet{background:#16224a;width:100%;border-radius:24px 24px 0 0;padding:20px 20px 40px;max-height:90vh;overflow:auto}
+.sheet label{display:block;color:#9fb0e0;margin:12px 0 4px;font-size:14px}
+.sheet input,.sheet textarea{width:100%;background:#0f1a33;border:1px solid #26346a;border-radius:12px;color:#fff;padding:12px;font-size:17px}
+.sheet .row{display:flex;gap:10px;margin-top:18px}.sheet .row .btn{flex:1;padding:14px}
+.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;text-align:center}
+.cal div{padding:12px 0;border-radius:12px;background:#0f1a33}
+.cal .h{background:none;color:#9fb0e0;font-size:13px;padding:4px}
+.cal .w{background:#14301f;color:#7fe3a0;font-weight:700}
+.cal .t{outline:2px solid #f58d24}
+.hide{display:none}
+#gear{background:none;border:0;font-size:28px;color:#fff}
+</style>
+</head>
+<body>
+<header><h1>🔧 Нормо-часы</h1><button id="gear">⚙️</button></header>
+
+<section id="p-orders">
+  <div class="card">
+    <div class="seg" id="seg"><button data-m="day" class="on">День</button><button data-m="week">Неделя</button><button data-m="month">Месяц</button></div>
+    <div class="nav"><button id="prev">‹</button><span id="plabel"></span><button id="next">›</button></div>
+    <div class="stats">
+      <div class="stat"><b id="sAW">0</b><span>AW</span></div>
+      <div class="stat"><b id="sH">0</b><span>нормо-часы</span></div>
+      <div class="stat g"><b id="sR">0 ₽</b><span>₽</span></div>
+    </div>
+    <p class="muted" id="sNote"></p>
+  </div>
+  <div class="actions">
+    <label class="btn o">📷 Сфотографировать заказ<input type="file" accept="image/*" capture="environment" id="cam" hidden></label>
+    <label class="btn d">🖼️ Из галереи<input type="file" accept="image/*" id="gal" hidden></label>
+  </div>
+  <button class="add" id="addBtn">+ Добавить вручную</button>
+  <div id="list"></div>
+</section>
+
+<section id="p-sched" class="hide">
+  <div class="card">
+    <div class="nav"><button id="cprev">‹</button><span id="clabel"></span><button id="cnext">›</button></div>
+    <div class="cal" id="cal"></div>
+    <p class="muted">Нажмите на день, чтобы отметить рабочим. Оклад начисляется за каждый рабочий день с заказами.</p>
+  </div>
+</section>
+
+<nav><button id="n1" class="on">📋 Заказы</button><button id="n2">📅 График</button></nav>
+
+<div class="modal" id="mOrder"><div class="sheet">
+  <h2 id="mTitle">Новый заказ</h2>
+  <img id="mPhoto" class="hide" style="max-width:100%;border-radius:12px">
+  <p class="muted" id="ocrSt"></p>
+  <label>Дата</label><input type="date" id="fDate">
+  <label>№ заказа</label><input id="fNum" inputmode="numeric">
+  <label>Автомобиль</label><input id="fCar">
+  <label>Работы</label><textarea id="fTxt" rows="3"></textarea>
+  <label>AW</label><input id="fAW" type="number" inputmode="decimal">
+  <div class="row"><button class="btn d" id="oCancel">Отмена</button><button class="btn o" id="oSave">Сохранить</button></div>
+</div></div>
+
+<div class="modal" id="mSet"><div class="sheet">
+  <h2>Настройки</h2>
+  <label>AW в одном нормо-часе</label><input id="sAWH" type="number" inputmode="decimal">
+  <label>Стоимость нормо-часа, ₽</label><input id="sRate" type="number" inputmode="decimal">
+  <label>Оклад за рабочий день, ₽</label><input id="sSal" type="number" inputmode="decimal">
+  <label>OpenAI API-ключ (распознавание нейросетью; пусто — локальный Tesseract)</label><input id="sKey" type="password" autocomplete="off" placeholder="sk-...">
+  <label>Модель</label><input id="sModel" placeholder="gpt-4o-mini">
+  <div class="row"><button class="btn d" id="setCancel">Отмена</button><button class="btn o" id="setSave">Сохранить</button></div>
+</div></div>
+
+<script src="vendor/tesseract.min.js"></script>
+<script>
+const $=s=>document.querySelector(s);
+const load=(k,d)=>{try{return JSON.parse(localStorage.getItem(k))??d}catch{return d}};
+let orders=load('orders',[]), work=load('work',{}), cfg=Object.assign({awh:12,rate:652,sal:2133},load('cfg',{}));
+const save=()=>{try{localStorage.setItem('orders',JSON.stringify(orders));localStorage.setItem('work',JSON.stringify(work));localStorage.setItem('cfg',JSON.stringify(cfg))}catch{alert('Не хватает места — удалите старые фото')}};
+const iso=d=>{const z=new Date(d);z.setMinutes(z.getMinutes()-z.getTimezoneOffset());return z.toISOString().slice(0,10)};
+const fmt=n=>Math.round(n).toLocaleString('ru-RU').replace(/\u00a0/g,' ');
+const fmtH=n=>(Math.round(n*100)/100).toString().replace('.',',');
+const MON=['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря'];
+const DOW=['Вс','Пн','Вт','Ср','Чт','Пт','Сб'];
+let mode='day', cur=new Date(); cur.setHours(12,0,0,0);
+let calCur=new Date(); calCur.setDate(1);
+
+const hours=aw=>aw/cfg.awh, money=aw=>hours(aw)*cfg.rate;
+const sumAW=l=>l.reduce((a,o)=>a+(+o.aw||0),0);
+
+function range(){
+  const s=new Date(cur),e=new Date(cur);
+  if(mode==='week'){const d=(s.getDay()+6)%7;s.setDate(s.getDate()-d);e.setTime(s.getTime());e.setDate(s.getDate()+6)}
+  if(mode==='month'){s.setDate(1);e.setTime(s.getTime());e.setMonth(e.getMonth()+1);e.setDate(0)}
+  return [iso(s),iso(e),s,e];
+}
+function label(){
+  const [,,s,e]=range();
+  if(mode==='day'){return iso(cur)===iso(new Date())?'Сегодня':`${s.getDate()} ${MON[s.getMonth()]}`}
+  if(mode==='week')return `${s.getDate()} ${MON[s.getMonth()]} – ${e.getDate()} ${MON[e.getMonth()]}`;
+  return ['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'][s.getMonth()]+' '+s.getFullYear();
+}
+// оклад начисляется за каждый день, где есть заказы или день отмечен рабочим
+function daySalary(day,hasOrders){return (hasOrders||work[day])?cfg.sal:0}
+
+function render(){
+  $('#plabel').textContent=label();
+  const [a,b]=range();
+  const inR=orders.filter(o=>o.date>=a&&o.date<=b);
+  const days=new Set(inR.map(o=>o.date));
+  Object.keys(work).filter(d=>work[d]&&d>=a&&d<=b).forEach(d=>days.add(d));
+  const aw=sumAW(inR), sal=[...days].length*cfg.sal, total=money(aw)+sal;
+  $('#sAW').textContent=fmtH(aw);$('#sH').textContent=fmtH(hours(aw));$('#sR').textContent=fmt(total)+' ₽';
+  $('#sNote').textContent=inR.length?`Заказов: ${inR.length} · нормо-часы ${fmt(money(aw))} ₽ + оклад ${fmt(sal)} ₽`:'Нет записей за период';
+  const by={};orders.forEach(o=>(by[o.date]??=[]).push(o));
+  const list=$('#list');list.innerHTML='';
+  Object.keys(by).sort().reverse().forEach(d=>{
+    const l=by[d],aw=sumAW(l),dt=new Date(d+'T12:00:00'),s=cfg.sal;
+    list.insertAdjacentHTML('beforeend',`<div class="day"><span>${DOW[dt.getDay()]}, ${dt.getDate()} ${MON[dt.getMonth()]}</span><span>${fmtH(aw)} AW · ${fmtH(hours(aw))} ч · ${fmt(money(aw))} ₽</span></div>
+    <div class="sal">Оклад ${fmt(s)} ₽ + нормо-часы = ${fmt(s+money(aw))} ₽</div>`);
+    l.forEach(o=>{
+      const el=document.createElement('div');el.className='order';
+      el.innerHTML=`<div class="top"><b>${o.num?'№ '+esc(o.num):''}</b><span class="badge">${fmtH(+o.aw||0)} AW</span></div>
+      <div class="car">${esc(o.car||'')}</div><div class="txt">${esc(o.txt||'')}</div>
+      ${o.photo?`<img src="${o.photo}">`:''}
+      <div class="sum">${fmtH(hours(+o.aw||0))} ч · ${fmt(money(+o.aw||0))} ₽ <button class="del">Удалить</button></div>`;
+      el.querySelector('.del').onclick=()=>{if(confirm('Удалить заказ?')){orders=orders.filter(x=>x!==o);save();render()}};
+      el.querySelector('.top').onclick=()=>openOrder(o);
+      list.appendChild(el);
+    });
+  });
+}
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+let editing=null,photo=null;
+function openOrder(o,ph){
+  editing=o||null;photo=o?o.photo:ph||null;
+  $('#mTitle').textContent=o?'Заказ':'Новый заказ';
+  $('#fDate').value=o?o.date:iso(cur);
+  $('#fNum').value=o?.num||'';$('#fCar').value=o?.car||'';$('#fTxt').value=o?.txt||'';$('#fAW').value=o?.aw??'';
+  $('#mPhoto').src=photo||'';$('#mPhoto').classList.toggle('hide',!photo);
+  $('#mOrder').classList.add('show');
+}
+$('#addBtn').onclick=()=>openOrder();
+$('#oCancel').onclick=()=>$('#mOrder').classList.remove('show');
+$('#oSave').onclick=()=>{
+  const o={date:$('#fDate').value||iso(new Date()),num:$('#fNum').value.trim(),car:$('#fCar').value.trim(),txt:$('#fTxt').value.trim(),aw:parseFloat($('#fAW').value.replace(',','.'))||0,photo};
+  if(editing)Object.assign(editing,o);else orders.push(o);
+  save();$('#mOrder').classList.remove('show');render();
+};
+function shrink(file,max=1000,q=.6){return new Promise(res=>{
+  const img=new Image();img.onload=()=>{const k=Math.min(1,max/Math.max(img.width,img.height));
+    const c=document.createElement('canvas');c.width=img.width*k;c.height=img.height*k;
+    c.getContext('2d').drawImage(img,0,0,c.width,c.height);res(c.toDataURL('image/jpeg',q))};
+  img.src=URL.createObjectURL(file)})}
+for(const id of['#cam','#gal'])$(id).onchange=async e=>{
+  const f=e.target.files[0];if(!f)return;
+  const big=await shrink(f,2000,.9);openOrder(null,await shrink(f));e.target.value='';
+  recognize(big);
+};
+
+async function cloudOCR(img){
+  const r=await fetch('https://api.openai.com/v1/chat/completions',{method:'POST',
+    headers:{'Content-Type':'application/json',Authorization:'Bearer '+cfg.key},
+    body:JSON.stringify({model:cfg.model||'gpt-4o-mini',response_format:{type:'json_object'},messages:[{role:'user',content:[
+      {type:'text',text:'Это фото заказ-наряда автосервиса. Верни JSON: {"num": номер заказа строкой, "car": "марка модель, госномер", "txt": "перечень работ через запятую", "aw": суммарное число AW/нормо-единиц числом}. Если поля нет — null.'},
+      {type:'image_url',image_url:{url:img}}]}]})});
+  const j=await r.json();if(!r.ok)throw new Error(j.error?.message||r.status);
+  const o=JSON.parse(j.choices[0].message.content);
+  return {num:o.num?String(o.num):'',car:o.car||'',txt:o.txt||'',aw:o.aw!=null?String(o.aw):''};
+}
+async function recognize(img){
+  const st=$('#ocrSt');
+  if(cfg.key){
+    st.textContent='Нейросеть читает заказ…';
+    try{fill(await cloudOCR(img));st.textContent='Распознано нейросетью — проверьте поля';return}
+    catch(e){st.textContent='Ошибка нейросети ('+(e.message||e)+'), пробую локально…'}
+  }
+  st.textContent='Распознаю текст… (первый раз до минуты)';
+  try{
+    const w=await Tesseract.createWorker(['rus','eng'],1,{
+      workerPath:new URL('vendor/worker.min.js',location).href,
+      corePath:new URL('vendor/',location).href,
+      langPath:new URL('vendor/',location).href,gzip:true});
+    const {data}=await w.recognize(img);await w.terminate();
+    fill(parseOrder(data.text));
+    st.textContent='Распознано — проверьте поля';
+  }catch(e){st.textContent='Не удалось распознать: '+(e.message||e)}
+}
+function fill(r){
+  if(r.num&&!$('#fNum').value)$('#fNum').value=r.num;
+  if(r.car&&!$('#fCar').value)$('#fCar').value=r.car;
+  if(r.txt&&!$('#fTxt').value)$('#fTxt').value=r.txt;
+  if(r.aw&&!$('#fAW').value)$('#fAW').value=r.aw;
+}
+function parseOrder(t){
+  const out={};
+  const lines=t.split('\n').map(x=>x.trim()).filter(Boolean);
+  let m=t.match(/(?:№|N[oо°]?|заказ[- ]?наряд)\s*[:.]?\s*(\d{5,})/i)||t.match(/\b(\d{7,9})\b/);
+  if(m)out.num=m[1];
+  m=t.match(/(\d+(?:[.,]\d+)?)\s*(?:AW|АW|AШ|АВ)\b/i)||t.match(/(?:AW|АW)\s*[:=-]?\s*(\d+(?:[.,]\d+)?)/i);
+  if(m)out.aw=m[1].replace(',','.');
+  m=t.match(/[АВЕКМНОРСТУХABEKMHOPCTYX]\s?\d{3}\s?[АВЕКМНОРСТУХABEKMHOPCTYX]{2}\s?\d{2,3}/i);
+  const plate=m?m[0].replace(/\s/g,''):'';
+  const car=lines.find(l=>/BMW|Audi|Mercedes|Toyota|Kia|Hyundai|Skoda|Volkswagen|Lada|Mazda|Nissan|Ford|Renault|Lexus|Honda|Chevrolet|Opel|Volvo|Subaru|Mitsubishi|Porsche|Geely|Haval|Chery/i.test(l));
+  if(car||plate)out.car=[car&&car.replace(plate,'').replace(/[,\s]+$/,''),plate].filter(Boolean).join(', ');
+  const work=lines.filter(l=>/[а-яё]{4,}/i.test(l)&&!/заказ|клиент|телефон|дата/i.test(l)&&l!==car);
+  if(work.length)out.txt=work.join(', ');
+  return out;
+}
+
+$('#seg').onclick=e=>{const m=e.target.dataset.m;if(!m)return;mode=m;
+  document.querySelectorAll('#seg button').forEach(b=>b.classList.toggle('on',b===e.target));render()};
+function step(n){
+  if(mode==='day')cur.setDate(cur.getDate()+n);
+  if(mode==='week')cur.setDate(cur.getDate()+7*n);
+  if(mode==='month'){cur.setDate(1);cur.setMonth(cur.getMonth()+n)}
+  render();
+}
+$('#prev').onclick=()=>step(-1);$('#next').onclick=()=>step(1);
+
+function renderCal(){
+  const y=calCur.getFullYear(),m=calCur.getMonth();
+  $('#clabel').textContent=['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'][m]+' '+y;
+  const c=$('#cal');c.innerHTML=['Пн','Вт','Ср','Чт','Пт','Сб','Вс'].map(d=>`<div class="h">${d}</div>`).join('');
+  const first=(new Date(y,m,1).getDay()+6)%7,n=new Date(y,m+1,0).getDate();
+  for(let i=0;i<first;i++)c.insertAdjacentHTML('beforeend','<div style="background:none"></div>');
+  for(let d=1;d<=n;d++){
+    const k=iso(new Date(y,m,d,12)),el=document.createElement('div');
+    el.textContent=d;if(work[k])el.className='w';if(k===iso(new Date()))el.classList.add('t');
+    el.onclick=()=>{work[k]=!work[k];if(!work[k])delete work[k];save();renderCal();render()};
+    c.appendChild(el);
+  }
+}
+$('#cprev').onclick=()=>{calCur.setMonth(calCur.getMonth()-1);renderCal()};
+$('#cnext').onclick=()=>{calCur.setMonth(calCur.getMonth()+1);renderCal()};
+
+function tab(n){$('#p-orders').classList.toggle('hide',n!==1);$('#p-sched').classList.toggle('hide',n!==2);
+  $('#n1').classList.toggle('on',n===1);$('#n2').classList.toggle('on',n===2);if(n===2)renderCal()}
+$('#n1').onclick=()=>tab(1);$('#n2').onclick=()=>tab(2);
+
+$('#gear').onclick=()=>{$('#sAWH').value=cfg.awh;$('#sRate').value=cfg.rate;$('#sSal').value=cfg.sal;$('#sKey').value=cfg.key||'';$('#sModel').value=cfg.model||'';$('#mSet').classList.add('show')};
+$('#setCancel').onclick=()=>$('#mSet').classList.remove('show');
+$('#setSave').onclick=()=>{
+  cfg.awh=parseFloat($('#sAWH').value)||12;cfg.rate=parseFloat($('#sRate').value)||0;cfg.sal=parseFloat($('#sSal').value)||0;cfg.key=$('#sKey').value.trim();cfg.model=$('#sModel').value.trim();
+  save();$('#mSet').classList.remove('show');render();
+};
+render();
+if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
+</script>
+</body>
+</html>
