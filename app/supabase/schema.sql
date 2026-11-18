@@ -32,8 +32,10 @@ create table if not exists public.order_jobs (
   user_id uuid not null default auth.uid() references auth.users(id) on delete cascade,
   order_id uuid not null references public.orders(id) on delete cascade,
   title text not null,
+  aw numeric(12,2),
   position int not null default 0
 );
+alter table public.order_jobs add column if not exists aw numeric(12,2);
 
 create table if not exists public.work_schedule (
   user_id uuid not null default auth.uid() references auth.users(id) on delete cascade,

@@ -28,7 +28,12 @@ export function OrderCard({ o, settings, actions }: { o: Order; settings: Settin
       </div>
       {o.jobs.length > 0 && (
         <ul className="mt-3 text-sm text-muted space-y-0.5 cursor-pointer" onClick={() => actions.onOpen(o)}>
-          {o.jobs.slice(0, 4).map((j) => <li key={j.id} className="line-clamp-1">• {j.title}</li>)}
+          {o.jobs.slice(0, 4).map((j) => (
+            <li key={j.id} className="flex items-baseline justify-between gap-2">
+              <span className="line-clamp-1">• {j.title}</span>
+              {j.aw100 != null && <span className="shrink-0 text-accent font-semibold tnum text-xs">{fmtAW(j.aw100)} AW</span>}
+            </li>
+          ))}
           {o.jobs.length > 4 && <li className="text-xs">и ещё {o.jobs.length - 4}…</li>}
         </ul>
       )}
@@ -71,7 +76,12 @@ export function OrderDetail({ o, settings, actions, onClose }: { o: Order | null
           {o.jobs.length > 0 && (
             <div>
               <div className="text-xs font-medium text-muted mb-1.5">Выполненные работы</div>
-              <ul className="space-y-1 text-sm">{o.jobs.map((j) => <li key={j.id}>• {j.title}</li>)}</ul>
+              <ul className="space-y-1.5 text-sm">{o.jobs.map((j) => (
+                <li key={j.id} className="flex items-start justify-between gap-3 rounded-lg bg-sec px-3 py-2">
+                  <span>{j.title}</span>
+                  {j.aw100 != null && <span className="shrink-0 rounded-full bg-accent/15 text-accent font-bold px-2 py-0.5 text-xs tnum">{fmtAW(j.aw100)} AW</span>}
+                </li>
+              ))}</ul>
             </div>
           )}
           {o.comment && <div><div className="text-xs font-medium text-muted mb-1.5">Комментарий</div><p className="text-sm whitespace-pre-wrap">{o.comment}</p></div>}

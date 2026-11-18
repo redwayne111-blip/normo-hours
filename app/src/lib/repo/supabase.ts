@@ -1,5 +1,5 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
-import { DEFAULT_SETTINGS, type Adjustment, type DayStatus, type Order, type Settings, type Snapshot } from '../types'
+import { DEFAULT_SETTINGS, type Adjustment, type Job, type DayStatus, type Order, type Settings, type Snapshot } from '../types'
 import type { Repository } from './types'
 
 const url = import.meta.env.VITE_SUPABASE_URL as string | undefined
@@ -28,9 +28,9 @@ export class SupabaseRepository implements Repository {
       this.sb.from('salary_settings').select('value').maybeSingle(),
       this.sb.from('salary_adjustments').select('*'),
     ])
-    const jobRows = fail(jobs) as { id: string; order_id: string; title: string }[]
-    const byOrder = new Map<string, { id: string; title: string }[]>()
-    for (const j of jobRows) byOrder.set(j.order_id, [...(byOrder.get(j.order_id) ?? []), { id: j.id, title: j.title }])
+    const jobRows = fail(jobs) as { id: string; order_id: string; title: string; aw: string | number | null }[]
+    const byOrder = new Map<string, Job[]>()
+    for (const j of jobRows) byOrder.set(j.order_id, [...(byOrder.get(j.order_id) ?? []), { id: j.id, title: j.title, aw100: j.aw == null ? undefined : toInt(j.aw) }])
     return {
       orders: (fail(orders) as Record<string, unknown>[]).map((r) => ({
         id: r.id as string, number: r.number as string, brand: r.brand as string, model: r.model as string,
@@ -55,7 +55,7 @@ export class SupabaseRepository implements Repository {
     fail(await this.sb.from('order_jobs').delete().eq('order_id', o.id))
     if (o.jobs.length) {
       fail(await this.sb.from('order_jobs').insert(
-        o.jobs.map((j, i) => ({ id: j.id, user_id: this.userId, order_id: o.id, title: j.title, position: i }))))
+        o.jobs.map((j, i) => ({ id: j.id, user_id: this.userId, order_id: o.id, title: j.title, aw: j.aw100 == null ? null : toDec(j.aw100), position: i }))))
     }
   }
   async deleteOrder(id: string) {

@@ -25,7 +25,7 @@ export async function parseBackup(file: File): Promise<{ snap: Snapshot; photos:
 }
 
 const rows = (orders: Order[]) => orders.map((o) => [
-  o.date, o.number, o.brand, o.model, o.plate, o.jobs.map((j) => j.title).join('; '),
+  o.date, o.number, o.brand, o.model, o.plate, o.jobs.map((j) => (j.aw100 != null ? `${j.title} (${j.aw100 / 100} AW)` : j.title)).join('; '),
   formatScaled(o.aw100), o.hours100 == null ? '' : formatScaled(o.hours100),
   formatScaled(o.earningsKop, 2, false), ORDER_STATUS_LABEL[o.status], o.comment,
 ])
@@ -44,7 +44,7 @@ export async function exportXlsx(orders: Order[]) {
   ws.addRow(HEAD).font = { bold: true }
   for (const o of orders) {
     ws.addRow([
-      o.date, o.number, o.brand, o.model, o.plate, o.jobs.map((j) => j.title).join('; '),
+      o.date, o.number, o.brand, o.model, o.plate, o.jobs.map((j) => (j.aw100 != null ? `${j.title} (${j.aw100 / 100} AW)` : j.title)).join('; '),
       o.aw100 / 100, o.hours100 == null ? null : o.hours100 / 100, o.earningsKop / 100, ORDER_STATUS_LABEL[o.status], o.comment,
     ])
   }

@@ -3,7 +3,7 @@ export type DayStatus = 'work' | 'off' | 'vacation' | 'unpaid'
 export type OrderStatus = 'confirmed' | 'draft' | 'cancelled'
 export type ScheduleType = '5/2' | '2/2' | '3/3' | '4/2' | 'custom' | 'manual'
 
-export interface Job { id: string; title: string }
+export interface Job { id: string; title: string; aw100?: number }
 
 export interface Order {
   id: string

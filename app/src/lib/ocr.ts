@@ -70,7 +70,7 @@ export async function recognizeCloud(image: Blob, apiKey: string): Promise<Parse
     body: JSON.stringify({
       model: 'gpt-4o-mini', response_format: { type: 'json_object' },
       messages: [{ role: 'user', content: [
-        { type: 'text', text: 'Это фото заказ-наряда автосервиса. Верни JSON: {"number": строка|null, "brand": строка|null, "model": строка|null, "plate": строка|null, "jobs": [строки], "aw": число|null, "hours": число|null, "sum": число|null}. Ничего не выдумывай: нет в документе — null.' },
+        { type: 'text', text: 'Это фото заказ-наряда автосервиса. Верни JSON: {"number": строка|null, "brand": строка|null, "model": строка|null, "plate": строка|null, "jobs": [{"title": строка, "aw": число|null}] (по каждой работе — её AW), "aw": число|null, "hours": число|null, "sum": число|null}. Ничего не выдумывай: нет в документе — null.' },
         { type: 'image_url', image_url: { url } },
       ] }],
     }),
@@ -81,7 +81,7 @@ export async function recognizeCloud(image: Blob, apiKey: string): Promise<Parse
   const n100 = (v: unknown) => (v == null || v === '' || isNaN(Number(v)) ? undefined : Math.round(Number(v) * 100))
   return {
     number: o.number ? String(o.number) : undefined, brand: o.brand || undefined, model: o.model || undefined,
-    plate: o.plate || undefined, jobs: Array.isArray(o.jobs) ? o.jobs.map(String) : [],
+    plate: o.plate || undefined, jobs: Array.isArray(o.jobs) ? o.jobs.map((j: unknown) => typeof j === 'string' ? { title: j } : { title: String((j as { title?: unknown }).title ?? ''), aw100: n100((j as { aw?: unknown }).aw) }).filter((j: { title: string }) => j.title) : [],
     aw100: n100(o.aw), hours100: n100(o.hours), earningsKop: n100(o.sum),
   }
 }

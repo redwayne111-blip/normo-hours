@@ -1,9 +1,11 @@
+export interface ParsedJob { title: string; aw100?: number }
+
 export interface ParsedOrder {
   number?: string
   brand?: string
   model?: string
   plate?: string
-  jobs: string[]
+  jobs: ParsedJob[]
   aw100?: number
   hours100?: number
   earningsKop?: number
@@ -45,7 +47,7 @@ export function parseOrderText(text: string): ParsedOrder {
 
   // Строки таблицы с единицей «AW»: AW берём из колонки AW, умножая на количество
   let tableAw100 = 0
-  const tableJobs: string[] = []
+  const tableJobs: ParsedJob[] = []
   for (const l of lines.map(stripToCode)) {
     const m = l.match(AW_ROW)
     if (!m) continue
@@ -53,7 +55,7 @@ export function parseOrderText(text: string): ParsedOrder {
     const aw = num100(m[3])
     if (qty === undefined || aw === undefined) continue
     tableAw100 += Math.round((qty * aw) / 100)
-    tableJobs.push(sentenceCase(m[1].trim()))
+    tableJobs.push({ title: sentenceCase(m[1].trim()), aw100: Math.round((qty * aw) / 100) })
   }
 
   const aw = text.match(/(\d+(?:[.,]\d+)?)\s*(?:AW|АW)\b/i) ?? text.match(/\b(?:AW|АW)\s*[:=-]?\s*(\d+(?:[.,]\d+)?)/i)
@@ -93,10 +95,16 @@ export function parseOrderText(text: string): ParsedOrder {
     }
   }
 
-  const codedJobs = lines.filter((l) => CODE.test(l)).map((l) => sentenceCase(stripToCode(l).split(/\s+[AА]W\b|\s+\d+[.,]\d{2}\b/)[0].replace(/[\s|_\\/]+$/, '').trim())).filter((l) => l.length > 3)
+  const codedJobs: ParsedJob[] = lines.filter((l) => CODE.test(l)).map((l) => {
+    const rest = stripToCode(l)
+    const aw = rest.match(/[AА]W\s+\d+[.,]\d{1,2}\s+(\d+(?:[.,]\d+)?)(?=\s|$)/)
+    const title = sentenceCase(rest.split(/\s+[AА]W\b|\s+\d+[.,]\d{2}\b/)[0].replace(/[\s|_\\/]+$/, '').trim())
+    return { title, aw100: aw ? num100(aw[1]) : undefined }
+  }).filter((j) => j.title.length > 3)
   out.jobs = tableJobs.length ? tableJobs : codedJobs.length ? codedJobs : lines
     .filter((l) => l !== carLine && !SKIP.test(l) && (l.match(/[а-яё]/gi)?.length ?? 0) >= 4)
     .map((l) => l.replace(/^[^а-яёa-z]+/i, '').replace(/^[a-z]\s{2,}/i, '').replace(/[\s|_\\/]+$/, '').replace(/\s{2,}/g, ' ').trim())
     .filter((l) => l && !/^(работы|выполненные работы|наименование работ)\s*:?$/i.test(l))
+    .map((title) => ({ title }))
   return out
 }

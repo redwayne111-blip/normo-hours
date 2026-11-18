@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { Plus, X } from 'lucide-react'
 import { Button, Field, Input, Select, Textarea } from './ui'
 import { Dialog } from './ui/dialog'
 import { Photo } from './photo'
@@ -9,10 +10,13 @@ import { uid } from '@/lib/utils'
 import { ORDER_STATUS_LABEL, type Order, type OrderStatus } from '@/lib/types'
 import { useStore } from '@/store'
 
-export interface OrderDraft extends Partial<Omit<Order, 'jobs'>> { jobs?: string[] }
+export interface DraftJob { title: string; aw100?: number }
+export interface OrderDraft extends Partial<Omit<Order, 'jobs'>> { jobs?: DraftJob[] }
+
+interface JobRow { key: string; title: string; aw: string }
 
 interface FormState {
-  number: string; brand: string; model: string; plate: string; date: string; jobs: string
+  number: string; brand: string; model: string; plate: string; date: string; jobs: JobRow[]
   aw: string; hours: string; earnings: string; comment: string; status: OrderStatus
 }
 
@@ -27,11 +31,11 @@ export function OrderFormDialog({ open, onClose, order, draft, photo, notice }: 
   notice?: string
 }) {
   const { settings, saveOrder, toast } = useStore()
-  const src: OrderDraft = order ? { ...order, jobs: order.jobs.map((j) => j.title) } : draft ?? {}
+  const src: OrderDraft = order ? { ...order, jobs: order.jobs.map((j) => ({ title: j.title, aw100: j.aw100 })) } : draft ?? {}
 
   const initial = useMemo<FormState>(() => ({
     number: src.number ?? '', brand: src.brand ?? '', model: src.model ?? '', plate: src.plate ?? '',
-    date: src.date ?? todayStr(), jobs: (src.jobs ?? []).join('\n'),
+    date: src.date ?? todayStr(), jobs: (src.jobs ?? []).map((j) => ({ key: uid(), title: j.title, aw: fmtIn(j.aw100, num2) })),
     aw: fmtIn(src.aw100, num2), hours: fmtIn(src.hours100, num2), earnings: fmtIn(src.earningsKop, kopToInput),
     comment: src.comment ?? '', status: src.status ?? 'confirmed',
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -73,6 +77,16 @@ export function OrderFormDialog({ open, onClose, order, draft, photo, notice }: 
     })
   }
 
+  const setJobs = (jobs: JobRow[]) => {
+    setF((s) => ({ ...s, jobs }))
+    // Общее AW = сумма AW по работам (если хотя бы у одной указано)
+    if (jobs.some((j) => j.aw.trim() !== '')) {
+      const sum = jobs.reduce((a, j) => a + (parseScaled(j.aw) ?? 0), 0)
+      onAw(num2(sum))
+    }
+  }
+  const updJob = (key: string, patch: Partial<JobRow>) => setJobs(f.jobs.map((j) => (j.key === key ? { ...j, ...patch } : j)))
+
   const submit = async () => {
     const e: typeof errors = {}
     const aw = f.aw.trim() === '' ? 0 : parseScaled(f.aw)
@@ -82,6 +96,7 @@ export function OrderFormDialog({ open, onClose, order, draft, photo, notice }: 
     if (aw == null || aw < 0 || aw > 99999999) e.aw = 'Введите число ≥ 0'
     if (f.hours.trim() !== '' && (hours == null || hours < 0)) e.hours = 'Введите число ≥ 0'
     if (earn == null || earn < 0) e.earnings = 'Введите сумму ≥ 0'
+    if (f.jobs.some((j) => j.aw.trim() !== '' && (parseScaled(j.aw) ?? -1) < 0)) e.jobs = 'AW работы: число ≥ 0'
     if (f.number.length > 30) e.number = 'Слишком длинный номер'
     if (!f.number.trim() && !f.brand.trim() && !aw) e.number = 'Заполните номер, автомобиль или AW'
     setErrors(e)
@@ -92,7 +107,8 @@ export function OrderFormDialog({ open, onClose, order, draft, photo, notice }: 
     const o: Order = {
       id: order?.id ?? uid(), number: f.number.trim(), brand: f.brand.trim(), model: f.model.trim(),
       plate: f.plate.replace(/\s/g, '').toUpperCase(), date: f.date,
-      jobs: f.jobs.split('\n').map((t) => t.trim()).filter(Boolean).map((title) => ({ id: uid(), title })),
+      jobs: f.jobs.map((j) => ({ id: uid(), title: j.title.trim(), aw100: j.aw.trim() === '' ? undefined : parseScaled(j.aw) ?? undefined }))
+        .filter((j) => j.title),
       aw100: aw!, hours100: hours ?? autoHours100(aw!, settings), earningsKop: earn!,
       comment: f.comment.trim(), status: f.status, photoId, createdAt: order?.createdAt ?? now, updatedAt: now,
     }
@@ -115,9 +131,20 @@ export function OrderFormDialog({ open, onClose, order, draft, photo, notice }: 
           <Field label="Модель"><Input value={f.model} onChange={(e) => set('model', e.target.value)} placeholder="3 серии" /></Field>
           <Field label="Госномер" className="col-span-2"><Input value={f.plate} onChange={(e) => set('plate', e.target.value)} placeholder="A123BC777" /></Field>
         </div>
-        <Field label="Выполненные работы" hint="По одной работе в строке"><Textarea rows={4} value={f.jobs} onChange={(e) => set('jobs', e.target.value)} /></Field>
+        <Field label="Выполненные работы" error={errors.jobs} hint="Каждая работа — отдельная строка со своим AW">
+          <div className="space-y-2">
+            {f.jobs.map((j) => (
+              <div key={j.key} className="flex gap-2 items-start">
+                <Textarea rows={2} className="flex-1 min-w-0" value={j.title} placeholder="Название работы" onChange={(e) => updJob(j.key, { title: e.target.value })} />
+                <Input className="w-20 shrink-0 text-center" inputMode="decimal" value={j.aw} placeholder="AW" aria-label="AW работы" onChange={(e) => updJob(j.key, { aw: e.target.value })} />
+                <Button type="button" className="shrink-0 px-2.5" aria-label="Удалить работу" onClick={() => setJobs(f.jobs.filter((x) => x.key !== j.key))}><X size={16} /></Button>
+              </div>
+            ))}
+            <Button type="button" className="w-full" onClick={() => set('jobs', [...f.jobs, { key: uid(), title: '', aw: '' }])}><Plus size={16} />Добавить работу</Button>
+          </div>
+        </Field>
         <div className="grid grid-cols-3 gap-3">
-          <Field label="AW" error={errors.aw}><Input inputMode="decimal" value={f.aw} onChange={(e) => onAw(e.target.value)} placeholder="0" /></Field>
+          <Field label="AW всего" error={errors.aw}><Input inputMode="decimal" value={f.aw} onChange={(e) => onAw(e.target.value)} placeholder="0" /></Field>
           <Field label="Нормо-часы" error={errors.hours}><Input inputMode="decimal" value={f.hours} onChange={(e) => { setTouched((t) => ({ ...t, hours: true })); set('hours', e.target.value) }} /></Field>
           <Field label={`Заработок, ${settings.currency}`} error={errors.earnings}><Input inputMode="decimal" value={f.earnings} onChange={(e) => { setTouched((t) => ({ ...t, earnings: true })); set('earnings', e.target.value) }} /></Field>
         </div>

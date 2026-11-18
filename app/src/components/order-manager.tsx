@@ -29,7 +29,7 @@ export function useOrderManager(defaultDate?: string) {
     onCopy: (o) => {
       setDetail(null)
       setForm({ order: null, photo: null, notice: 'Копия заказа: проверьте номер и дату.', draft: {
-        ...o, id: undefined, photoId: null, number: '', date: defaultDate ?? todayStr(), jobs: o.jobs.map((j) => j.title), status: 'confirmed',
+        ...o, id: undefined, photoId: null, number: '', date: defaultDate ?? todayStr(), jobs: o.jobs.map((j) => ({ title: j.title, aw100: j.aw100 })), status: 'confirmed',
       } })
     },
     onDelete: (o) => setToDelete(o),
