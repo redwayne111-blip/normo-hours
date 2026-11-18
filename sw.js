@@ -1,6 +1,6 @@
 // Network-first: всегда свежая версия при наличии сети, кеш — для офлайна.
 // Заменяет service worker старой версии (удаляет все чужие кеши).
-const CACHE = 'normo-app-v1'
+const CACHE = 'normo-app-v2'
 self.addEventListener('install', () => self.skipWaiting())
 self.addEventListener('activate', (e) => e.waitUntil(
   caches.keys()

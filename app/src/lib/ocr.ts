@@ -84,7 +84,10 @@ const sentence = (t: string) => { const l = t.replace(/[^а-яёa-z]/gi, ''); re
 
 /** Локальный OCR (Tesseract.js, rus+eng). Данные языка и ядро лежат в public/vendor — работает офлайн. */
 export async function recognizeLocal(image: Blob, onProgress?: (p: number) => void): Promise<ParsedOrder> {
-  const { createWorker } = await import('tesseract.js')
+  const { createWorker } = await import('tesseract.js').catch(() => {
+    if (!sessionStorage.getItem('ocr-reload')) { sessionStorage.setItem('ocr-reload', '1'); location.reload() }
+    throw new Error('Приложение обновилось — страница перезагружается, повторите попытку')
+  })
   const worker = await createWorker(['rus', 'eng'], 1, {
     workerPath: base() + 'worker.min.js',
     corePath: base(),
