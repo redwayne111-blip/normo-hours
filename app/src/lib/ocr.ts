@@ -80,6 +80,26 @@ export async function preprocessForOcr(file: Blob, target = 2600): Promise<Blob>
   return new Promise((res, rej) => out.toBlob((b) => (b ? res(b) : rej(new Error('Не удалось подготовить фото'))), 'image/png'))
 }
 
+async function cropTable(blob: Blob, words: OcrWord[]): Promise<{ blob: Blob } | null> {
+  const head = words.find((w) => /^описани/i.test(w.text.trim()))
+  if (!head) return null
+  const hs = words.map((w) => w.bbox.y1 - w.bbox.y0).sort((a, b) => a - b)
+  const medH = hs[Math.floor(hs.length / 2)] || 10
+  const end = words.filter((w) => w.bbox.y0 > head.bbox.y1 + medH * 2 && /^(?:работа|итого|нетто|скидка)/i.test(w.text.trim())).sort((a, b) => a.bbox.y0 - b.bbox.y0)[0]
+  const bmp = await createImageBitmap(blob)
+  const y0 = Math.max(0, Math.round(head.bbox.y0 - medH * 1.5))
+  const y1 = Math.min(bmp.height, Math.round(end ? end.bbox.y0 : head.bbox.y1 + medH * 14))
+  if (y1 - y0 < medH * 3) return null
+  const k = Math.min(2.5, 4000 / bmp.width)
+  const c = document.createElement('canvas')
+  c.width = Math.round(bmp.width * k); c.height = Math.round((y1 - y0) * k)
+  const ctx = c.getContext('2d')!
+  ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, c.width, c.height)
+  ctx.drawImage(bmp, 0, y0, bmp.width, y1 - y0, 0, 0, c.width, c.height)
+  const out = await new Promise<Blob>((res, rej) => c.toBlob((b) => (b ? res(b) : rej(new Error('crop'))), 'image/png'))
+  return { blob: out }
+}
+
 const sentence = (t: string) => { const l = t.replace(/[^а-яёa-z]/gi, ''); return l && l === l.toUpperCase() ? t.charAt(0) + t.slice(1).toLowerCase() : t }
 
 /** Локальный OCR (Tesseract.js, rus+eng). Данные языка и ядро лежат в public/vendor — работает офлайн. */
@@ -103,7 +123,15 @@ export async function recognizeLocal(image: Blob, onProgress?: (p: number) => vo
     const words = ((data as unknown as { words?: OcrWord[] }).words ?? [])
     const lines = wordsToLines(words)
     const parsed = parseOrderText(lines.length ? lines.join('\n') : data.text)
-    const table = extractAwTable(words)
+    let table = extractAwTable(words)
+    // мелкий текст таблицы: вырезаем её и распознаём второй раз в увеличенном виде
+    const crop = await cropTable(prepared, words).catch(() => null)
+    if (crop) {
+      const second = ((await worker.recognize(crop.blob)).data as unknown as { words?: OcrWord[] }).words ?? []
+      const t2 = extractAwTable(second)
+      console.debug('[ocr] table pass', table.length, '->', t2.length)
+      if (t2.length >= table.length) table = t2
+    }
     if (table.length) {
       parsed.jobs = table.map((j) => ({ title: sentence(j.title), aw100: j.aw100 }))
       parsed.aw100 = table.reduce((a, j) => a + j.aw100, 0)
