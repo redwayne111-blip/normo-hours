@@ -1,5 +1,5 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
-import { DEFAULT_SETTINGS, type Adjustment, type Job, type DayStatus, type Order, type Settings, type Snapshot } from '../types'
+import { normalizeSettings, type Adjustment, type Job, type DayStatus, type Order, type Settings, type Snapshot } from '../types'
 import type { Repository } from './types'
 
 const url = import.meta.env.VITE_SUPABASE_URL as string | undefined
@@ -40,7 +40,7 @@ export class SupabaseRepository implements Repository {
         createdAt: r.created_at as string, updatedAt: r.updated_at as string,
       })),
       days: Object.fromEntries((fail(days) as { date: string; status: DayStatus }[]).map((d) => [d.date, d.status])),
-      settings: { ...DEFAULT_SETTINGS, ...((fail(settings) as { value: Settings } | null)?.value ?? {}) },
+      settings: normalizeSettings((fail(settings) as { value: Settings } | null)?.value),
       adjustments: (fail(adj) as { id: string; date: string; title: string; amount: number }[])
         .map((a) => ({ id: a.id, date: a.date, title: a.title, amountKop: toInt(a.amount) })),
     }

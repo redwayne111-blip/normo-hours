@@ -6,7 +6,7 @@ import { exportBackup, parseBackup } from '@/lib/backup'
 import { hasLegacyData, readLegacy } from '@/lib/legacy'
 import { patternIsWork, parsePattern } from '@/lib/calc'
 import { addDays, formatDate, todayStr, WEEKDAYS, weekday } from '@/lib/dates'
-import { fmtMoney, formatScaled, kopToInput, parseScaled } from '@/lib/money'
+import { fmtMoney, formatScaled, kopToInput, parseScaled, roundDiv } from '@/lib/money'
 import { uid } from '@/lib/utils'
 import { DEFAULT_SETTINGS, type ScheduleType, type Settings, type Snapshot } from '@/lib/types'
 import { useStore } from '@/store'
@@ -24,7 +24,7 @@ export function SettingsPage() {
   const store = useStore()
   const { settings, adjustments, saveSettings, saveAdjustment, deleteAdjustment, repo, toast, replaceAll, signOut } = store
   const [f, setF] = useState({
-    salary: kopToInput(settings.monthlySalaryKop), rate: kopToInput(settings.awRateKop), awh: formatScaled(settings.awPerHour100).replace(/\u00a0/g, ''),
+    salary: kopToInput(settings.monthlySalaryKop), rate: kopToInput(settings.hourRateKop), awh: formatScaled(settings.awPerHour100).replace(/\u00a0/g, ''),
     startDay: String(settings.periodStartDay), vacationPaid: settings.vacationPaid, type: settings.schedule.type,
     schedStart: settings.schedule.startDate, pattern: settings.schedule.pattern, currency: settings.currency,
     dateFormat: settings.dateFormat, theme: settings.theme, key: settings.openaiKey,
@@ -39,7 +39,7 @@ export function SettingsPage() {
     const e: Record<string, string> = {}
     const salary = parseScaled(f.salary), rate = parseScaled(f.rate), awh = parseScaled(f.awh), day = Number(f.startDay)
     if (salary == null || salary < 0) e.salary = 'Введите сумму ≥ 0'
-    if (rate == null || rate <= 0) e.rate = 'Введите стоимость AW > 0'
+    if (rate == null || rate <= 0) e.rate = 'Введите ставку > 0'
     if (awh == null || awh < 0) e.awh = 'Введите число ≥ 0 (0 — не считать часы)'
     if (!Number.isInteger(day) || day < 1 || day > 31) e.startDay = 'День от 1 до 31'
     if (f.type === 'custom' && parsePattern(f.pattern).length === 0) e.pattern = 'Используйте Р (рабочий) и В (выходной), например РРВВ'
@@ -47,7 +47,7 @@ export function SettingsPage() {
     setErr(e)
     if (Object.keys(e).length) return
     const s: Settings = {
-      ...settings, monthlySalaryKop: salary!, awRateKop: rate!, awPerHour100: awh!, periodStartDay: day, vacationPaid: f.vacationPaid,
+      ...settings, monthlySalaryKop: salary!, hourRateKop: rate!, awRateKop: awh! > 0 ? roundDiv(rate! * 100, awh!) : settings.awRateKop, awPerHour100: awh!, periodStartDay: day, vacationPaid: f.vacationPaid,
       schedule: { type: f.type, startDate: f.schedStart, pattern: f.pattern }, currency: f.currency.trim() || '₽',
       dateFormat: f.dateFormat, theme: f.theme, openaiKey: f.key.trim(),
     }
@@ -87,7 +87,7 @@ export function SettingsPage() {
       <Section title="Заработная плата">
         <div className="grid sm:grid-cols-2 gap-4">
           <Field label={`Месячный оклад, ${f.currency}`} error={err.salary}><Input inputMode="decimal" value={f.salary} onChange={(e) => set('salary', e.target.value)} /></Field>
-          <Field label={`Стоимость одного AW, ${f.currency}`} error={err.rate}><Input inputMode="decimal" value={f.rate} onChange={(e) => set('rate', e.target.value)} /></Field>
+          <Field label={`Ставка за нормо-час, ${f.currency}`} error={err.rate}><Input inputMode="decimal" value={f.rate} onChange={(e) => set('rate', e.target.value)} /></Field>
           <Field label="AW в одном нормо-часе" error={err.awh} hint="Например 12: 136 AW = 11,33 ч"><Input inputMode="decimal" value={f.awh} onChange={(e) => set('awh', e.target.value)} /></Field>
           <Field label="День начала расчётного периода" error={err.startDay} hint="1 — календарный месяц"><Input inputMode="numeric" value={f.startDay} onChange={(e) => set('startDay', e.target.value)} /></Field>
         </div>

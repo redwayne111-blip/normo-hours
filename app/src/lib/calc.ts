@@ -2,8 +2,9 @@ import type { Adjustment, DayMap, DayStatus, Order, ScheduleSettings, Settings }
 import { addDays, diffDays, eachDay, periodsOverlapping, weekday, type Range } from './dates'
 import { roundDiv } from './money'
 
-/** AW × стоимость AW; AW / (AW в часе). Только целые числа. */
-export function autoEarningsKop(aw100: number, s: Pick<Settings, 'awRateKop'>): number {
+/** AW × ставка часа / AW в часе (без промежуточного округления); иначе AW × стоимость AW. Только целые числа. */
+export function autoEarningsKop(aw100: number, s: Pick<Settings, 'awRateKop' | 'hourRateKop' | 'awPerHour100'>): number {
+  if (s.hourRateKop > 0 && s.awPerHour100 > 0) return roundDiv(aw100 * s.hourRateKop, s.awPerHour100)
   return roundDiv(aw100 * s.awRateKop, 100)
 }
 export function autoHours100(aw100: number, s: Pick<Settings, 'awPerHour100'>): number | null {

@@ -11,12 +11,20 @@ const manualDays = (dates: number[], status: 'work' | 'vacation' | 'unpaid' = 'w
 const WORK15 = [2, 3, 6, 7, 8, 11, 12, 16, 17, 20, 21, 22, 25, 26, 30]
 
 describe('AW и нормо-часы', () => {
-  it('136 AW × 54,33 ₽ = 7 388,88 ₽, 11,33 ч', () => {
-    expect(autoEarningsKop(13600, S)).toBe(738888)
-    expect(autoHours100(13600, S)).toBe(1133)
+  const byAw = { awRateKop: 5433, hourRateKop: 0, awPerHour100: 1200 }
+  it('по стоимости AW: 136 AW × 54,33 ₽ = 7 388,88 ₽, 11,33 ч', () => {
+    expect(autoEarningsKop(13600, byAw)).toBe(738888)
+    expect(autoHours100(13600, byAw)).toBe(1133)
   })
   it('дробные AW считаются точно', () => {
-    expect(autoEarningsKop(1050, S)).toBe(57047) // 10,5 × 54,33 = 570,465 → 570,47
+    expect(autoEarningsKop(1050, byAw)).toBe(57047) // 10,5 × 54,33 = 570,465 → 570,47
+  })
+  it('по умолчанию 652 ₽/ч при 12 AW/ч: 105 AW = 5 705 ₽', () => {
+    expect(autoEarningsKop(10500, S)).toBe(570500)
+  })
+  it('график по умолчанию — 15 рабочих дней в ноябре 2026', () => {
+    const days = eachDay('2026-11-01', '2026-11-30').filter((d) => patternIsWork(d, S.schedule)).map((d) => Number(d.slice(8)))
+    expect(days).toEqual(WORK15)
   })
   it('без коэффициента часы не считаются', () => {
     expect(autoHours100(13600, { awPerHour100: 0 })).toBeNull()

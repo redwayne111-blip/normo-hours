@@ -4,7 +4,6 @@ import { autoEarningsKop, autoHours100 } from './calc'
 import { dataUrlToBlob, uid } from './utils'
 
 // График пользователя на ноябрь 2026 (со скриншота): рабочие дни, остальные — выходные.
-export const SEED_WORK_DAYS = [2, 3, 6, 7, 8, 11, 12, 16, 17, 20, 21, 22, 25, 26, 30].map((d) => '2026-11-' + String(d).padStart(2, '0'))
 
 interface LegacyOrder { date: string; num?: string; car?: string; txt?: string; aw?: number | string; photo?: string | null }
 
@@ -22,7 +21,8 @@ export async function readLegacy(): Promise<{ snap: Snapshot; photos: Record<str
   const settings = { ...DEFAULT_SETTINGS }
   if (cfg.awh && cfg.rate) {
     settings.awPerHour100 = Math.round(cfg.awh * 100)
-    settings.awRateKop = roundDiv(Math.round(cfg.rate * 100) * 100, settings.awPerHour100)
+    settings.hourRateKop = Math.round(cfg.rate * 100)
+    settings.awRateKop = roundDiv(settings.hourRateKop * 100, settings.awPerHour100)
   }
   const now = new Date().toISOString()
   const photos: Record<string, Blob> = {}
@@ -50,5 +50,5 @@ export async function readLegacy(): Promise<{ snap: Snapshot; photos: Record<str
 }
 
 export function firstRunSnapshot(): Snapshot {
-  return { orders: [], days: Object.fromEntries(SEED_WORK_DAYS.map((d) => [d, 'work' as const])), settings: { ...DEFAULT_SETTINGS }, adjustments: [] }
+  return { orders: [], days: {}, settings: { ...DEFAULT_SETTINGS }, adjustments: [] }
 }

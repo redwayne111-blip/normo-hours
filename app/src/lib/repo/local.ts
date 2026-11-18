@@ -1,5 +1,5 @@
 import Dexie, { type Table } from 'dexie'
-import { DEFAULT_SETTINGS, type Adjustment, type DayStatus, type Order, type Settings, type Snapshot } from '../types'
+import { normalizeSettings, type Adjustment, type DayStatus, type Order, type Settings, type Snapshot } from '../types'
 import type { Repository } from './types'
 
 interface DayRow { date: string; status: DayStatus }
@@ -35,7 +35,7 @@ export class LocalRepository implements Repository {
     return {
       orders,
       days: Object.fromEntries(dayRows.map((r) => [r.date, r.status])),
-      settings: { ...DEFAULT_SETTINGS, ...(set?.value ?? {}), schedule: { ...DEFAULT_SETTINGS.schedule, ...(set?.value.schedule ?? {}) } },
+      settings: normalizeSettings(set?.value),
       adjustments,
     }
   }
