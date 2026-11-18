@@ -58,7 +58,7 @@ export function parseOrderText(text: string): ParsedOrder {
 
   out.jobs = lines
     .filter((l) => l !== carLine && !SKIP.test(l) && (l.match(/[а-яё]/gi)?.length ?? 0) >= 4)
-    .map((l) => l.replace(/^[\d\s.)•*-]+/, '').trim())
-    .filter(Boolean)
+    .map((l) => l.replace(/^[^а-яёa-z]+/i, '').replace(/^[a-z]\s{2,}/i, '').replace(/[\s|_\\/]+$/, '').replace(/\s{2,}/g, ' ').trim())
+    .filter((l) => l && !/^(работы|выполненные работы|наименование работ)\s*:?$/i.test(l))
   return out
 }

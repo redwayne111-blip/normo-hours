@@ -41,7 +41,7 @@ export function useOrderManager(defaultDate?: string) {
     let photo: Blob
     try { photo = await compressImage(file) } catch (e) { setOcr(null); toast((e as Error).message, 'err'); return }
     try {
-      const { data, engine, note } = await recognize(photo, settings.openaiKey, (p) => setOcr(p))
+      const { data, engine, note } = await recognize(file, settings.openaiKey, (p) => setOcr(p))
       if (cancelled.current) return
       const aw = data.aw100
       const draft: OrderDraft = {
