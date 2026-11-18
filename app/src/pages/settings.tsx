@@ -1,9 +1,9 @@
 import { useRef, useState } from 'react'
 import { Download, LogOut, Plus, Trash2, Upload } from 'lucide-react'
-import { Button, Card, Field, Input, Select } from '@/components/ui'
+import { Button, Card, Field, Input, Select, Textarea } from '@/components/ui'
 import { Confirm } from '@/components/ui/dialog'
 import { exportBackup, parseBackup } from '@/lib/backup'
-import { hasLegacyData, readLegacy } from '@/lib/legacy'
+import { hasLegacyData, parseClaudeExport, readLegacy } from '@/lib/legacy'
 import { patternIsWork, parsePattern } from '@/lib/calc'
 import { addDays, formatDate, todayStr, WEEKDAYS, weekday } from '@/lib/dates'
 import { fmtMoney, formatScaled, kopToInput, parseScaled, roundDiv } from '@/lib/money'
@@ -76,6 +76,18 @@ export function SettingsPage() {
     const l = await readLegacy()
     if (!l) return toast('Данных старой версии не найдено', 'err')
     setConfirm({ title: 'Импорт из старой версии?', label: 'Импортировать', text: `Заказов: ${l.snap.orders.length}, отмеченных дней: ${Object.keys(l.snap.days).length}. Текущие данные будут заменены.`, run: async () => { await replaceAll(l.snap, l.photos); toast('Данные импортированы') } })
+  }
+  const [claudeText, setClaudeText] = useState('')
+  const doClaude = async () => {
+    try {
+      const r = parseClaudeExport(claudeText, settings, store.orders)
+      const nDays = Object.keys(r.days).length
+      if (!r.orders.length && !nDays) return toast(r.skipped ? 'Все эти записи уже есть в приложении' : 'В тексте не найдено записей', 'err')
+      for (const o of r.orders) await store.saveOrder(o)
+      for (const [d, st] of Object.entries(r.days)) await store.setDay(d, st)
+      setClaudeText('')
+      toast(`Перенесено заказов: ${r.orders.length}, дней графика: ${nDays}${r.skipped ? `, пропущено дублей: ${r.skipped}` : ''}`)
+    } catch (e) { toast((e as Error).message, 'err') }
   }
   const clearAll = () => setConfirm({
     title: 'Удалить все данные?', label: 'Удалить всё', text: 'Заказы, график, корректировки и фотографии будут удалены безвозвратно. Сделайте резервную копию заранее.',
@@ -158,6 +170,12 @@ export function SettingsPage() {
           <input ref={fileRef} type="file" accept="application/json,.json" hidden onChange={(e) => { const x = e.target.files?.[0]; e.target.value = ''; if (x) doImport(x) }} />
           {hasLegacyData() && <Button onClick={doLegacy}>Импорт из старой версии</Button>}
           <Button variant="danger" onClick={clearAll}><Trash2 size={18} />Удалить все данные</Button>
+        </div>
+        <div className="pt-3 border-t border-line space-y-2">
+          <h3 className="font-semibold">Перенос из старого приложения (Claude)</h3>
+          <p className="text-xs text-muted">Попросите Claude вывести ваши записи как JSON, вставьте сюда и нажмите «Перенести». Текущие данные не удаляются, дубли пропускаются.</p>
+          <Textarea rows={5} value={claudeText} onChange={(e) => setClaudeText(e.target.value)} placeholder='[{"type":"order","date":"2026-11-12", ...}]' />
+          <Button disabled={!claudeText.trim()} onClick={doClaude}><Upload size={18} />Перенести</Button>
         </div>
         {signOut && <Button onClick={signOut}><LogOut size={18} />Выйти из аккаунта</Button>}
       </Section>

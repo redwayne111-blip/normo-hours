@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { autoEarningsKop, autoHours100, patternIsWork, salaryForRange, summarize } from './calc'
 import { formatScaled, parseScaled, roundDiv, fmtMoney } from './money'
 import { DEFAULT_SETTINGS, type DayMap, type Order, type Settings } from './types'
+import { parseClaudeExport } from './legacy'
 import { eachDay, settlementPeriod } from './dates'
 
 const S: Settings = { ...DEFAULT_SETTINGS }
@@ -95,5 +96,22 @@ describe('итоги', () => {
     expect(sum.salaryKop).toBe(3200000)
     expect(sum.adjustmentsKop).toBe(-100000)
     expect(sum.totalKop).toBe(3838888)
+  })
+})
+
+describe('перенос из старого приложения', () => {
+  const json = JSON.stringify([
+    { type: 'order', date: '2026-11-12', orderNo: '87654321', car: 'BMW X7, Е456КХ777', works: [{ desc: 'Развал', aw: 23, mine: true }, { desc: 'Чужая', aw: 50, mine: false }], aw: 23, createdAt: 1 },
+    { type: 'schedule', month: '2026-11', days: { '05': 'vacation' } },
+  ])
+  it('берёт только свои работы, авто и график', () => {
+    const r = parseClaudeExport('Вот данные:\n' + json, S, [])
+    expect(r.orders).toHaveLength(1)
+    expect(r.orders[0]).toMatchObject({ number: '87654321', brand: 'BMW', model: 'X7', plate: 'Е456КХ777', aw100: 2300, earningsKop: 124967 })
+    expect(r.days).toEqual({ '2026-11-05': 'vacation' })
+  })
+  it('пропускает дубли', () => {
+    const first = parseClaudeExport(json, S, [])
+    expect(parseClaudeExport(json, S, first.orders).orders).toHaveLength(0)
   })
 })
