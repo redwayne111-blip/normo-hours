@@ -9,6 +9,7 @@ export interface ParsedOrder {
   aw100?: number
   hours100?: number
   earningsKop?: number
+  raw?: string
 }
 
 const BRANDS = ['BMW', 'Audi', 'Mercedes-Benz', 'Mercedes', 'Toyota', 'Kia', 'Hyundai', 'Skoda', 'Volkswagen', 'Lada', 'ВАЗ', 'Mazda', 'Nissan', 'Ford',
@@ -21,7 +22,8 @@ const CODE = /\bSERV[\dOОo]{2,}\b/i
 const stripToCode = (l: string) => { const m = l.match(CODE); return m ? l.slice((m.index ?? 0) + m[0].length).trim() : l }
 const VIN = /\b[A-HJ-NPR-Z0-9]{17}\b/
 // Строка работы в таблице сервисного заказа: [код] описание AW к-во AW-значение цена ...
-const AW_ROW = /^(?:[A-Z]{2,}\d+\s+)?(.+?)\s+[AА]W\s+(\d+[.,]\d{1,2})\s+(\d+(?:[.,]\d+)?)(?=\s|$)/
+const AW_UNIT = '[AaАа][WwМмMm]'
+const AW_ROW = new RegExp(`^(?:[A-Z]{2,}\\d+\\s+)?(.+?)\\s+${AW_UNIT}\\s+(\\d+[.,]\\d{1,2})\\s+(\\d{1,3})(?=\\s|$)`)
 const SKIP = /заказ|наряд|клиент|телефон|дата|итого|номер|vin|пробег|цена|стоимость|сумма|₽|руб|мастер|исполнитель|подпись|принял|нормо/i
 
 function num100(s: string): number | undefined {
@@ -39,11 +41,18 @@ function sentenceCase(t: string) {
 
 /** Разбор распознанного текста заказ-наряда. Нераспознанные поля остаются undefined. */
 export function parseOrderText(text: string): ParsedOrder {
-  const out: ParsedOrder = { jobs: [] }
+  const out: ParsedOrder = { jobs: [], raw: text }
   const lines = text.split(/\r?\n/).map((l) => l.trim()).filter(Boolean)
 
   const num = text.match(/заказ\s+номер\W{0,4}(\d{6,})/i) ?? text.match(/(?:№|N[o°º]?\.?|заказ[\s-]*наряд\w*)\s*[:№.]*\s*(\d{5,})/i)
   if (num) out.number = num[1]
+  else {
+    // номер заказа печатается на бланке дважды — берём 8-значное число, встретившееся не менее двух раз
+    const counts = new Map<string, number>()
+    for (const m of text.matchAll(/(?<!\d)\d{8}(?!\d)/g)) counts.set(m[0], (counts.get(m[0]) ?? 0) + 1)
+    const top = [...counts].filter(([, n]) => n >= 2).sort((a, b) => b[1] - a[1])[0]
+    if (top) out.number = top[0]
+  }
 
   // Строки таблицы с единицей «AW»: AW берём из колонки AW, умножая на количество
   let tableAw100 = 0
@@ -82,6 +91,16 @@ export function parseOrderText(text: string): ParsedOrder {
       carLine = brandLine
     }
   }
+  if (!carLine) {
+    // Марка в начале строки, модель — первое слово следующей строки (колонки «Марка / Модель»)
+    for (let i = 0; i < lines.length - 1 && !carLine; i++) {
+      const b = BRANDS.find((x) => new RegExp(`^${x.replace(/[-\s]/g, '[-\\s]?')}(?![\\p{L}])`, 'iu').test(lines[i]))
+      const model = lines[i + 1].split(/\s+/)[0]
+      if (b && /^[A-ZА-Я]?\d{0,3}[A-ZА-Я]?\d?$/i.test(model) && model.length <= 4 && /[A-ZА-Я0-9]/i.test(model) && /\s(?:[A-Z0-9]{10,17}|\d[\d\s]*)\b/.test(lines[i + 1] + ' ')) {
+        out.brand = b; out.model = model.toUpperCase(); carLine = lines[i]
+      }
+    }
+  }
   for (const b of carLine ? [] : BRANDS) {
     const re = new RegExp(`(^|[^\\p{L}])(${b.replace(/[-\s]/g, '[-\\s]?')})(?![\\p{L}])`, 'iu')
     const line = lines.find((l) => re.test(l))
@@ -97,8 +116,8 @@ export function parseOrderText(text: string): ParsedOrder {
 
   const codedJobs: ParsedJob[] = lines.filter((l) => CODE.test(l)).map((l) => {
     const rest = stripToCode(l)
-    const aw = rest.match(/[AА]W\s+\d+[.,]\d{1,2}\s+(\d+(?:[.,]\d+)?)(?=\s|$)/)
-    const title = sentenceCase(rest.split(/\s+[AА]W\b|\s+\d+[.,]\d{2}\b/)[0].replace(/[\s|_\\/]+$/, '').trim())
+    const aw = rest.match(new RegExp(`${AW_UNIT}\\s+\\d+[.,]\\d{1,2}\\s+(\\d{1,3})(?=\\s|$)`))
+    const title = sentenceCase(rest.split(new RegExp(`\\s+${AW_UNIT}(?=\\s)|\\s+\\d+[.,]\\d{2}\\b`))[0].replace(/[\s|_\\/]+$/, '').trim())
     return { title, aw100: aw ? num100(aw[1]) : undefined }
   }).filter((j) => j.title.length > 3)
   out.jobs = tableJobs.length ? tableJobs : codedJobs.length ? codedJobs : lines

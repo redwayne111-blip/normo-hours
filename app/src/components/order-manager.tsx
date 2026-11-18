@@ -45,7 +45,7 @@ export function useOrderManager(defaultDate?: string) {
       if (cancelled.current) return
       const aw = data.aw100
       const draft: OrderDraft = {
-        date: defaultDate ?? todayStr(), number: data.number, brand: data.brand, model: data.model, plate: data.plate, jobs: data.jobs,
+        date: defaultDate ?? todayStr(), number: data.number, brand: data.brand, model: data.model, plate: data.plate, jobs: data.jobs, raw: data.raw,
         aw100: aw, hours100: data.hours100 ?? (aw != null ? autoHours100(aw, settings) ?? undefined : undefined),
         earningsKop: data.earningsKop ?? (aw != null ? autoEarningsKop(aw, settings) : undefined),
       }

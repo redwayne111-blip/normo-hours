@@ -11,7 +11,7 @@ import { ORDER_STATUS_LABEL, type Order, type OrderStatus } from '@/lib/types'
 import { useStore } from '@/store'
 
 export interface DraftJob { title: string; aw100?: number }
-export interface OrderDraft extends Partial<Omit<Order, 'jobs'>> { jobs?: DraftJob[] }
+export interface OrderDraft extends Partial<Omit<Order, 'jobs'>> { jobs?: DraftJob[]; raw?: string }
 
 interface JobRow { key: string; title: string; aw: string }
 
@@ -124,6 +124,12 @@ export function OrderFormDialog({ open, onClose, order, draft, photo, notice }: 
         {notice && <div className="text-sm rounded-xl bg-accent/10 border border-accent/30 text-accent px-3 py-2">{notice}</div>}
         {preview ? <img src={preview} alt="Фото заказа" className="rounded-xl max-h-52 w-full object-contain bg-sec" />
           : order?.photoId ? <Photo id={order.photoId} className="rounded-xl max-h-52 w-full object-contain bg-sec" /> : null}
+        {src.raw && (
+          <details className="text-xs text-muted rounded-xl bg-sec px-3 py-2">
+            <summary className="cursor-pointer">Распознанный текст</summary>
+            <pre className="whitespace-pre-wrap mt-2 max-h-48 overflow-auto">{src.raw}</pre>
+          </details>
+        )}
         <div className="grid grid-cols-2 gap-3">
           <Field label="Номер заказ-наряда" error={errors.number}><Input inputMode="numeric" value={f.number} onChange={(e) => set('number', e.target.value)} placeholder="12345678" /></Field>
           <Field label="Дата выполнения" error={errors.date}><Input type="date" value={f.date} onChange={(e) => set('date', e.target.value)} /></Field>
