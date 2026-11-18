@@ -25,7 +25,7 @@ export function AuthScreen({ onLocal }: { onLocal: () => void }) {
   return (
     <div className="min-h-dvh grid place-items-center p-4">
       <Card className="w-full max-w-sm p-6 anim-pop">
-        <div className="flex items-center gap-3 text-xl font-bold mb-6"><span className="size-10 rounded-xl bg-accent grid place-items-center text-white"><Wrench size={22} /></span>Нормо-часы</div>
+        <div className="flex items-center gap-3 text-xl font-bold mb-6"><span className="size-10 rounded-[30%] btn-primary grid place-items-center"><Wrench size={22} /></span>Нормо-часы</div>
         <form onSubmit={submit} className="space-y-4">
           <Field label="Email"><Input type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} /></Field>
           <Field label="Пароль"><Input type="password" autoComplete={mode === 'in' ? 'current-password' : 'new-password'} value={password} onChange={(e) => setPassword(e.target.value)} /></Field>

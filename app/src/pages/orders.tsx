@@ -28,24 +28,35 @@ export function OrdersPage() {
     return [...m.entries()]
   }, [visible])
   const nFilters = activeFilterCount(filters, ['q'])
+  const plural = (n: number, a: string, b: string, c: string) => { const m = n % 100, k = n % 10; return m > 10 && m < 20 ? c : k === 1 ? a : k >= 2 && k <= 4 ? b : c }
 
   return (
     <div className="space-y-5">
-      <Card className="p-4 md:p-5">
+      <section className="hero rounded-[32px] p-5 md:p-6">
         <PeriodBar p={p} />
-        <div className="grid grid-cols-3 gap-2 md:gap-3 mt-4">
-          <div className="rounded-2xl bg-accent/10 py-4 text-center"><div className="text-2xl md:text-3xl font-bold tnum">{fmtAW(sum.aw100) || '0'}</div><div className="text-xs md:text-sm text-muted mt-1">AW</div></div>
-          <div className="rounded-2xl bg-sec py-4 text-center"><div className="text-2xl md:text-3xl font-bold tnum">{fmtHours(sum.hours100)}</div><div className="text-xs md:text-sm text-muted mt-1">нормо-часы</div></div>
-          <div className="rounded-2xl bg-money/10 py-4 text-center"><div className="text-xl md:text-3xl font-bold text-money tnum">{fmtMoney(sum.totalKop, cur)}</div><div className="text-xs md:text-sm text-muted mt-1">заработок</div></div>
+        <div className="mt-6 flex items-end justify-between gap-3">
+          <div className="min-w-0">
+            <div className="eyebrow">Заработок</div>
+            <div className="num-display text-grad-money text-[44px] md:text-6xl mt-2 truncate">{fmtMoney(sum.totalKop, cur)}</div>
+          </div>
+          <div className="text-right text-xs text-muted tnum leading-relaxed shrink-0">
+            {sum.orderCount ? <><div>{sum.orderCount} {plural(sum.orderCount, 'заказ', 'заказа', 'заказов')}</div></> : <div>нет заказов</div>}
+          </div>
         </div>
-        <div className="text-center text-sm text-muted mt-3 tnum">
-          {sum.orderCount || sum.salaryKop || sum.adjustmentsKop
-            ? <>Оклад {fmtMoney(sum.salaryKop, cur)} + нормо-часы {fmtMoney(sum.normKop, cur)}{sum.adjustmentsKop ? ` ${sum.adjustmentsKop > 0 ? '+' : '−'} корректировки ${fmtMoney(Math.abs(sum.adjustmentsKop), cur)}` : ''}</>
-            : 'Нет записей за период'}
+        <div className="grid grid-cols-2 gap-3 mt-5">
+          <div className="rounded-2xl bg-accent/10 border border-accent/20 px-4 py-3.5"><div className="eyebrow !text-accent">AW</div><div className="num-display text-3xl mt-2">{fmtAW(sum.aw100) || '0'}</div></div>
+          <div className="rounded-2xl bg-fg/5 border border-line px-4 py-3.5"><div className="eyebrow">Нормо-часы</div><div className="num-display text-3xl mt-2">{fmtHours(sum.hours100)}</div></div>
         </div>
-      </Card>
+        {(sum.orderCount > 0 || sum.salaryKop > 0 || sum.adjustmentsKop !== 0) && (
+          <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-1 text-[13px] text-muted tnum">
+            <span>Оклад <b className="text-fg font-semibold">{fmtMoney(sum.salaryKop, cur)}</b></span><span aria-hidden>+</span>
+            <span>нормо-часы <b className="text-fg font-semibold">{fmtMoney(sum.normKop, cur)}</b></span>
+            {sum.adjustmentsKop !== 0 && <><span aria-hidden>{sum.adjustmentsKop > 0 ? '+' : '−'}</span><span>корректировки <b className="text-fg font-semibold">{fmtMoney(Math.abs(sum.adjustmentsKop), cur)}</b></span></>}
+          </div>
+        )}
+      </section>
 
-      <div className="grid grid-cols-5 gap-3">
+      <div className="grid grid-cols-5 gap-2.5">
         <Button variant="primary" size="lg" className="col-span-3 md:col-span-2" onClick={() => mgr.openNew()}><Plus size={20} />Добавить заказ</Button>
         <label className="col-span-2 md:col-span-1 contents">
           <input id="cam" type="file" accept="image/*" capture="environment" hidden onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ''; if (f) mgr.fromPhoto(f) }} />
@@ -62,7 +73,7 @@ export function OrdersPage() {
         </div>
         <Button className="relative" aria-label="Фильтры" onClick={() => setShowFilters((s) => !s)}>
           <SlidersHorizontal size={18} />
-          {nFilters > 0 && <span className="absolute -top-1 -right-1 size-5 rounded-full bg-accent text-white text-xs grid place-items-center">{nFilters}</span>}
+          {nFilters > 0 && <span className="absolute -top-1 -right-1 size-5 rounded-full btn-primary text-xs grid place-items-center">{nFilters}</span>}
         </Button>
       </div>
       {showFilters && (
@@ -86,12 +97,15 @@ export function OrdersPage() {
             const sal = salaryForRange({ from: date, to: date }, days, settings)
             return (
               <section key={date} className="space-y-3">
-                <div>
-                  <div className="flex flex-wrap items-baseline justify-between gap-x-4 px-1 text-sm">
-                    <span className="font-semibold text-muted">{formatDayLong(date)}</span>
-                    <span className="text-muted tnum">{fmtAW(aw) || 0} AW · {fmtHours(h)} ч · {fmtMoney(norm, cur)}</span>
+                <div className="flex items-end justify-between gap-3 px-1">
+                  <div>
+                    <div className="text-lg font-extrabold tracking-tight">{formatDayLong(date)}</div>
+                    <div className="text-[13px] text-muted tnum mt-0.5">{fmtAW(aw) || 0} AW · {fmtHours(h)} ч{sal > 0 && <> · оклад {fmtMoney(sal, cur)}</>}</div>
                   </div>
-                  {sal > 0 && <div className="px-1 mt-1 text-sm font-semibold text-money tnum">Оклад {fmtMoney(sal, cur)} + нормо-часы = {fmtMoney(sal + norm, cur)}</div>}
+                  <div className="text-right shrink-0">
+                    <div className="num-display text-xl text-money">{fmtMoney(sal + norm, cur)}</div>
+                    {sal > 0 && <div className="text-[11px] text-muted mt-1">с окладом</div>}
+                  </div>
                 </div>
                 <div className="grid gap-3 lg:grid-cols-2">
                   {list.map((o) => <OrderCard key={o.id} o={o} settings={settings} actions={mgr.actions} />)}

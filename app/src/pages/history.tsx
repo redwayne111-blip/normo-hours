@@ -40,7 +40,7 @@ export function HistoryPage() {
     <div className="space-y-5">
       <Card className="p-4 md:p-5 space-y-4">
         <div className="flex items-center justify-between">
-          <button className="flex items-center gap-2 font-bold" onClick={() => setOpen(!open)}><SlidersHorizontal size={18} />Фильтры{n > 0 && <span className="size-5 rounded-full bg-accent text-white text-xs grid place-items-center">{n}</span>}</button>
+          <button className="flex items-center gap-2 font-bold" onClick={() => setOpen(!open)}><SlidersHorizontal size={18} />Фильтры{n > 0 && <span className="size-5 rounded-full btn-primary text-xs grid place-items-center">{n}</span>}</button>
           {n > 0 && <Button size="sm" variant="ghost" onClick={() => setF(EMPTY_FILTERS)}>Сбросить</Button>}
         </div>
         {open && (

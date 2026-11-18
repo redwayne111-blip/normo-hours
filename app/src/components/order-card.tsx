@@ -1,5 +1,5 @@
 import { Copy, Pencil, Trash2 } from 'lucide-react'
-import { Badge, Button, Card } from './ui'
+import { Button, Card } from './ui'
 import { Dialog } from './ui/dialog'
 import { Photo } from './photo'
 import { orderHours100 } from '@/lib/calc'
@@ -17,17 +17,17 @@ const title = (o: Order) => [o.brand, o.model].filter(Boolean).join(' ') || 'А�
 export function OrderCard({ o, settings, actions }: { o: Order; settings: Settings; actions: OrderActions }) {
   const cancelled = o.status === 'cancelled'
   return (
-    <Card className={cn('p-4 transition hover:border-accent/40 anim-fade', cancelled && 'opacity-70')}>
+    <Card className={cn('p-4 transition active:scale-[0.99] hover:border-accent/40 anim-fade', cancelled && 'opacity-70')}>
       <div className="flex items-start justify-between gap-3 cursor-pointer" onClick={() => actions.onOpen(o)}>
         <div className="min-w-0">
           <div className="text-xs font-semibold text-muted tnum">{o.number ? `Заказ № ${o.number}` : 'Без номера'}</div>
           <div className={cn('text-lg font-bold leading-tight mt-0.5', cancelled && 'line-through')}>{title(o)}</div>
-          {o.plate && <div className="text-sm text-muted tnum mt-0.5">{o.plate}</div>}
+          {o.plate && <div className="plate mt-2">{o.plate}</div>}
         </div>
-        <Badge className="bg-accent text-white shrink-0 tnum">{fmtAW(o.aw100)} AW</Badge>
+        <span className="pill-aw shrink-0 tnum">{fmtAW(o.aw100)} AW</span>
       </div>
       {o.jobs.length > 0 && (
-        <ul className="mt-3 text-sm text-muted space-y-0.5 cursor-pointer" onClick={() => actions.onOpen(o)}>
+        <ul className="mt-3 pt-3 border-t border-line text-sm text-muted space-y-1 cursor-pointer" onClick={() => actions.onOpen(o)}>
           {o.jobs.slice(0, 4).map((j) => (
             <li key={j.id} className="flex items-baseline justify-between gap-2">
               <span className="line-clamp-1">• {j.title}</span>
@@ -64,20 +64,20 @@ export function OrderDetail({ o, settings, actions, onClose }: { o: Order | null
         <div className="space-y-4">
           <div className="flex flex-wrap items-center gap-2 text-sm">
             {o.number && <span className="text-muted tnum">Заказ № {o.number}</span>}
-            {o.plate && <span className="rounded-lg bg-sec px-2 py-1 tnum font-semibold">{o.plate}</span>}
+            {o.plate && <span className="plate">{o.plate}</span>}
             <span className={cn('rounded-full px-2 py-0.5 font-semibold text-xs', statusStyle[o.status])}>{ORDER_STATUS_LABEL[o.status]}</span>
           </div>
           <div className="grid grid-cols-3 gap-2 text-center">
-            <div className="rounded-xl bg-accent/10 p-3"><div className="text-xl font-bold text-accent tnum">{fmtAW(o.aw100)}</div><div className="text-xs text-muted">AW</div></div>
-            <div className="rounded-xl bg-sec p-3"><div className="text-xl font-bold tnum">{fmtHours(orderHours100(o, settings))}</div><div className="text-xs text-muted">нормо-часы</div></div>
-            <div className="rounded-xl bg-money/10 p-3"><div className="text-xl font-bold text-money tnum">{fmtMoney(o.earningsKop, settings.currency, true)}</div><div className="text-xs text-muted">заработок</div></div>
+            <div className="rounded-2xl bg-accent/10 border border-accent/20 p-3"><div className="text-xl font-bold text-accent tnum">{fmtAW(o.aw100)}</div><div className="text-xs text-muted">AW</div></div>
+            <div className="rounded-2xl bg-fg/5 border border-line p-3"><div className="text-xl font-bold tnum">{fmtHours(orderHours100(o, settings))}</div><div className="text-xs text-muted">нормо-часы</div></div>
+            <div className="rounded-2xl bg-money/10 border border-money/20 p-3"><div className="text-xl font-bold text-money tnum">{fmtMoney(o.earningsKop, settings.currency, true)}</div><div className="text-xs text-muted">заработок</div></div>
           </div>
           <div className="text-sm text-muted">Дата выполнения: {formatDate(o.date, settings.dateFormat)}</div>
           {o.jobs.length > 0 && (
             <div>
               <div className="text-xs font-medium text-muted mb-1.5">Выполненные работы</div>
               <ul className="space-y-1.5 text-sm">{o.jobs.map((j) => (
-                <li key={j.id} className="flex items-start justify-between gap-3 rounded-lg bg-sec px-3 py-2">
+                <li key={j.id} className="flex items-start justify-between gap-3 rounded-xl bg-fg/5 px-3 py-2">
                   <span>{j.title}</span>
                   {j.aw100 != null && <span className="shrink-0 rounded-full bg-accent/15 text-accent font-bold px-2 py-0.5 text-xs tnum">{fmtAW(j.aw100)} AW</span>}
                 </li>

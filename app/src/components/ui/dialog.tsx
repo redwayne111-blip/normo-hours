@@ -13,13 +13,14 @@ export function Dialog({ open, onOpenChange, title, children, wide }: { open: bo
         <D.Content
           aria-describedby={undefined}
           className={cn(
-            'fixed z-50 bg-card border border-line shadow-2xl outline-none flex flex-col',
+            'fixed z-50 surface !bg-card border-line-strong shadow-2xl outline-none flex flex-col',
             'inset-x-0 bottom-0 max-h-[92dvh] rounded-t-3xl anim-up',
             'md:inset-auto md:left-1/2 md:top-1/2 md:-translate-x-1/2 md:-translate-y-1/2 md:rounded-3xl md:w-full md:anim-pop',
             wide ? 'md:max-w-2xl' : 'md:max-w-lg',
           )}>
-          <div className="flex items-center justify-between px-5 pt-5 pb-3 shrink-0">
-            <D.Title className="text-lg font-bold">{title}</D.Title>
+          <div className="md:hidden mx-auto mt-2.5 h-1.5 w-10 rounded-full bg-fg/20 shrink-0" />
+          <div className="flex items-center justify-between px-5 pt-3 md:pt-5 pb-3 shrink-0">
+            <D.Title className="text-xl font-extrabold tracking-tight">{title}</D.Title>
             <D.Close asChild><Button variant="ghost" size="sm" aria-label="Закрыть" className="size-9 px-0"><X size={20} /></Button></D.Close>
           </div>
           <div className="overflow-y-auto px-5 pb-6 safe-b">{children}</div>
@@ -36,7 +37,7 @@ export function Confirm({ open, onOpenChange, title, text, confirmLabel = 'Уд�
     <A.Root open={open} onOpenChange={onOpenChange}>
       <A.Portal>
         <A.Overlay className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm anim-fade" />
-        <A.Content className="fixed z-[70] left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[calc(100%-2rem)] max-w-sm rounded-3xl bg-card border border-line p-6 shadow-2xl anim-pop outline-none">
+        <A.Content className="fixed z-[70] left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[calc(100%-2rem)] max-w-sm rounded-3xl surface !bg-card p-6 shadow-2xl anim-pop outline-none">
           <A.Title className="text-lg font-bold">{title}</A.Title>
           <A.Description className="text-sm text-muted mt-2">{text}</A.Description>
           <div className="flex gap-3 mt-6">

@@ -32,34 +32,51 @@ function Shell() {
   const Page = TABS.find((t) => t.id === route)!.page
   useEffect(() => { window.scrollTo({ top: 0 }) }, [route])
 
+  const cur = TABS.find((t) => t.id === route)!
+  const Logo = ({ size = 40 }: { size?: number }) => (
+    <span style={{ width: size, height: size }} className="btn-primary rounded-[30%] grid place-items-center shrink-0"><Wrench size={size * 0.55} strokeWidth={2.4} /></span>
+  )
+
   return (
-    <div className="min-h-dvh md:pl-64">
-      <aside className="hidden md:flex fixed inset-y-0 left-0 w-64 flex-col gap-1 border-r border-line bg-sec/60 p-4">
-        <div className="flex items-center gap-3 px-3 py-4 text-xl font-bold"><span className="size-10 rounded-xl bg-accent grid place-items-center text-white"><Wrench size={22} /></span>Нормо-часы</div>
+    <div className="min-h-dvh md:pl-72">
+      <aside className="hidden md:flex fixed inset-y-0 left-0 w-72 flex-col gap-1.5 border-r border-line glass p-5">
+        <div className="flex items-center gap-3 px-2 pt-2 pb-6">
+          <Logo size={44} />
+          <div><div className="text-xl font-extrabold leading-none tracking-tight">Нормо-часы</div><div className="eyebrow mt-1.5">учёт заработка</div></div>
+        </div>
         {TABS.map((t) => (
-          <a key={t.id} href={'#/' + t.id} className={cn('flex items-center gap-3 rounded-xl px-4 py-3 font-semibold transition', route === t.id ? 'bg-card text-accent border border-line' : 'text-muted hover:text-fg hover:bg-card/60')}>
-            <t.icon size={20} />{t.label}
+          <a key={t.id} href={'#/' + t.id} aria-current={route === t.id ? 'page' : undefined}
+            className={cn('group relative flex items-center gap-3 rounded-2xl px-4 py-3 font-semibold transition', route === t.id ? 'bg-accent/12 text-accent' : 'text-muted hover:text-fg hover:bg-fg/5')}>
+            {route === t.id && <span className="absolute left-0 top-3 bottom-3 w-1 rounded-r-full bg-accent" />}
+            <t.icon size={21} strokeWidth={route === t.id ? 2.4 : 2} />{t.label}
           </a>
         ))}
       </aside>
 
-      <header className="md:hidden sticky top-0 z-20 bg-card/90 backdrop-blur border-b border-line safe-t">
-        <div className="flex items-center gap-3 px-4 h-14 font-bold text-lg"><Wrench size={20} className="text-accent" />{TABS.find((t) => t.id === route)!.label}</div>
+      <header className="md:hidden sticky top-0 z-20 glass border-b border-line safe-t">
+        <div className="flex items-center gap-3 px-5 h-16">
+          <Logo size={34} />
+          <div className="min-w-0">
+            <div className="eyebrow leading-none">Нормо-часы</div>
+            <h1 className="text-[22px] font-extrabold leading-tight tracking-tight">{cur.label}</h1>
+          </div>
+        </div>
       </header>
-      <h1 className="hidden md:block max-w-5xl mx-auto px-8 pt-8 text-2xl font-bold">{TABS.find((t) => t.id === route)!.label}</h1>
+      <h1 className="hidden md:block max-w-5xl mx-auto px-10 pt-10 text-4xl font-extrabold tracking-tight">{cur.label}</h1>
 
-      <main className="max-w-5xl mx-auto px-4 md:px-8 py-4 md:py-6 pb-28 md:pb-10" key={route}><div className="anim-fade"><Page /></div></main>
+      <main className="max-w-5xl mx-auto px-4 md:px-10 py-5 md:py-6 pb-36 md:pb-12" key={route}><div className="anim-fade"><Page /></div></main>
 
-      <nav className="md:hidden fixed bottom-0 inset-x-0 z-30 grid grid-cols-5 bg-card/95 backdrop-blur border-t border-line safe-b">
+      <nav className="md:hidden fixed z-30 inset-x-3 bottom-[calc(env(safe-area-inset-bottom)+10px)] grid grid-cols-5 gap-1 rounded-[28px] glass border border-line-strong p-1.5 shadow-2xl shadow-black/40">
         {TABS.map((t) => (
-          <a key={t.id} href={'#/' + t.id} className={cn('flex flex-col items-center gap-1 py-2.5 text-[11px] font-semibold transition', route === t.id ? 'text-accent' : 'text-muted')}>
-            <t.icon size={22} />{t.label}
+          <a key={t.id} href={'#/' + t.id} aria-current={route === t.id ? 'page' : undefined}
+            className={cn('flex flex-col items-center gap-0.5 rounded-[22px] py-2 text-[10.5px] font-semibold transition-all duration-200', route === t.id ? 'bg-accent/15 text-accent' : 'text-muted active:scale-95')}>
+            <t.icon size={22} strokeWidth={route === t.id ? 2.5 : 1.9} />{t.label}
           </a>
         ))}
       </nav>
 
-      <div className="fixed z-[80] inset-x-0 bottom-24 md:bottom-6 flex flex-col items-center gap-2 pointer-events-none px-4">
-        {toasts.map((t) => <div key={t.id} role="status" className={cn('anim-up rounded-xl px-4 py-3 text-sm font-semibold shadow-xl border', t.kind === 'err' ? 'bg-danger text-white border-transparent' : 'bg-card text-fg border-line')}>{t.msg}</div>)}
+      <div className="fixed z-[80] inset-x-0 bottom-32 md:bottom-8 flex flex-col items-center gap-2 pointer-events-none px-4">
+        {toasts.map((t) => <div key={t.id} role="status" className={cn('anim-up rounded-2xl px-5 py-3 text-sm font-semibold shadow-2xl border glass', t.kind === 'err' ? 'bg-danger text-white border-transparent' : 'border-line-strong')}>{t.msg}</div>)}
       </div>
     </div>
   )

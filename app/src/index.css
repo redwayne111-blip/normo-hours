@@ -12,58 +12,138 @@
   --color-danger: var(--danger);
   --color-warn: var(--warn);
   --color-offday: var(--offday);
+  --color-elev: var(--elev);
+  --color-line-strong: var(--line-strong);
+  --color-accent-2: var(--accent-2);
+  --color-accent-fg: var(--accent-fg);
+  --color-cool: var(--cool);
   --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, system-ui, sans-serif;
+  --font-display: ui-rounded, "SF Pro Rounded", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
 }
 
+
 :root, .dark {
-  --bg: #101727;
-  --card: #1b2740;
-  --sec: #111827;
-  --fg: #e5eaf5;
-  --muted: #94a3b8;
-  --line: rgba(148, 163, 184, 0.16);
-  --accent: #f79324;
-  --money: #269f60;
-  --danger: #ef4444;
-  --warn: #d9a521;
-  --offday: #22335a;
+  --bg: #090d1a;
+  --card: #131a2e;
+  --elev: #1a2340;
+  --sec: #0d1325;
+  --fg: #f1f4fb;
+  --muted: #94a0ba;
+  --line: rgba(255, 255, 255, 0.075);
+  --line-strong: rgba(255, 255, 255, 0.14);
+  --accent: #ffa42b;
+  --accent-2: #ff7a18;
+  --accent-fg: #1c1204;
+  --money: #3ddc97;
+  --cool: #7aa8ff;
+  --danger: #ff6b6b;
+  --warn: #f5c451;
+  --offday: #26345f;
+  --glow-a: rgba(255, 150, 40, 0.16);
+  --glow-b: rgba(70, 110, 255, 0.14);
+  --shadow: 0 1px 0 rgba(255,255,255,.04) inset, 0 10px 30px -12px rgba(0,0,0,.6);
   color-scheme: dark;
 }
 .light {
-  --bg: #f1f5f9;
+  --bg: #f3f1ec;
   --card: #ffffff;
-  --sec: #e8edf5;
-  --fg: #0f172a;
-  --muted: #5b6b82;
-  --line: rgba(15, 23, 42, 0.12);
-  --accent: #e07b0a;
-  --money: #1b8a4f;
-  --danger: #dc2626;
-  --warn: #b7830f;
-  --offday: #dfe6f3;
+  --elev: #ffffff;
+  --sec: #ece9e2;
+  --fg: #14161f;
+  --muted: #5d6578;
+  --line: rgba(20, 22, 31, 0.09);
+  --line-strong: rgba(20, 22, 31, 0.18);
+  --accent: #e8700a;
+  --accent-2: #f59a23;
+  --accent-fg: #ffffff;
+  --money: #0e8a55;
+  --cool: #3b64d8;
+  --danger: #d92d2d;
+  --warn: #a8740a;
+  --offday: #dde3f0;
+  --glow-a: rgba(255, 160, 60, 0.22);
+  --glow-b: rgba(90, 130, 255, 0.10);
+  --shadow: 0 1px 2px rgba(20,22,31,.05), 0 10px 28px -14px rgba(20,22,31,.18);
   color-scheme: light;
 }
 
 html, body, #root { min-height: 100%; }
+html { background: var(--bg); }
 body {
   margin: 0;
-  background: var(--bg);
+  background:
+    radial-gradient(60rem 36rem at -10% -12%, var(--glow-a), transparent 60%),
+    radial-gradient(52rem 34rem at 112% 4%, var(--glow-b), transparent 60%),
+    var(--bg);
+  background-attachment: fixed;
   color: var(--fg);
   font-family: var(--font-sans);
+  letter-spacing: -0.005em;
   -webkit-tap-highlight-color: transparent;
   -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
 }
+h1, h2, h3 { text-wrap: balance; letter-spacing: -0.02em; }
 button { font: inherit; cursor: pointer; }
 input, select, textarea { font: inherit; }
+::selection { background: color-mix(in srgb, var(--accent) 35%, transparent); }
 ::-webkit-scrollbar { width: 8px; height: 8px; }
-::-webkit-scrollbar-thumb { background: var(--line); border-radius: 8px; }
+::-webkit-scrollbar-thumb { background: var(--line-strong); border-radius: 8px; }
+
+@layer components {
+/* Поверхности */
+.surface {
+  background: linear-gradient(180deg, color-mix(in srgb, var(--elev) 60%, var(--card)) 0%, var(--card) 100%);
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow);
+}
+.hero {
+  position: relative; overflow: hidden;
+  background:
+    radial-gradient(28rem 14rem at 100% -20%, color-mix(in srgb, var(--accent) 22%, transparent), transparent 70%),
+    linear-gradient(160deg, color-mix(in srgb, var(--elev) 80%, var(--card)), var(--card));
+  border: 1px solid var(--line-strong);
+  box-shadow: var(--shadow);
+}
+.glass {
+  background: color-mix(in srgb, var(--card) 78%, transparent);
+  -webkit-backdrop-filter: saturate(1.6) blur(18px); backdrop-filter: saturate(1.6) blur(18px);
+}
+.btn-primary {
+  background: linear-gradient(180deg, color-mix(in srgb, var(--accent) 88%, #fff) 0%, var(--accent) 45%, var(--accent-2) 100%);
+  color: var(--accent-fg);
+  box-shadow: 0 1px 0 rgba(255,255,255,.35) inset, 0 8px 22px -8px color-mix(in srgb, var(--accent) 75%, transparent);
+}
+.pill-aw {
+  display: inline-flex; align-items: center; padding: 5px 12px; border-radius: 999px;
+  font-weight: 800; font-size: 14px; letter-spacing: -.01em;
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  color: var(--accent-fg);
+  box-shadow: 0 6px 14px -6px color-mix(in srgb, var(--accent) 70%, transparent);
+}
+.text-grad-money { background: linear-gradient(180deg, color-mix(in srgb, var(--money) 70%, #fff), var(--money)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.num-display { font-family: var(--font-display); font-variant-numeric: tabular-nums; letter-spacing: -0.03em; font-weight: 800; line-height: 1; }
+.eyebrow { font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+
+/* Автомобильный номер */
+.plate {
+  display: inline-flex; align-items: center; gap: .35rem;
+  font-variant-numeric: tabular-nums; font-weight: 700; font-size: 12.5px; letter-spacing: .04em;
+  padding: 2px 8px; border-radius: 6px;
+  background: #f7f7f2; color: #111; border: 1.5px solid #1b1b1b;
+  box-shadow: 0 1px 0 rgba(0,0,0,.25);
+}
+}
 
 @keyframes fade-in { from { opacity: 0 } to { opacity: 1 } }
 @keyframes slide-up { from { transform: translateY(24px); opacity: 0 } to { transform: none; opacity: 1 } }
 @keyframes pop { from { transform: scale(.96); opacity: 0 } to { transform: none; opacity: 1 } }
-.anim-fade { animation: fade-in .18s ease-out; }
-.anim-up { animation: slide-up .22s ease-out; }
-.anim-pop { animation: pop .18s ease-out; }
+@keyframes rise { from { transform: translateY(8px); opacity: 0 } to { transform: none; opacity: 1 } }
+.anim-fade { animation: fade-in .2s ease-out; }
+.anim-up { animation: slide-up .26s cubic-bezier(.2,.8,.2,1); }
+.anim-pop { animation: pop .2s ease-out; }
+.anim-rise { animation: rise .32s cubic-bezier(.2,.8,.2,1) both; }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; } }
 .tnum { font-variant-numeric: tabular-nums; }
 .safe-b { padding-bottom: env(safe-area-inset-bottom); }
 .safe-t { padding-top: env(safe-area-inset-top); }

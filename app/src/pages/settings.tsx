@@ -160,7 +160,7 @@ export function SettingsPage() {
         <Field label="OpenAI API-ключ (необязательно)" hint="Для более точного распознавания фото нейросетью. Ключ хранится только на этом устройстве; без него используется локальный OCR."><Input type="password" autoComplete="off" value={f.key} onChange={(e) => set('key', e.target.value)} placeholder="sk-…" /></Field>
       </Section>
 
-      <div className="sticky bottom-20 md:bottom-4 z-10"><Button variant="primary" size="lg" className="w-full shadow-2xl" onClick={save}>Сохранить настройки</Button></div>
+      <div className="sticky bottom-[calc(env(safe-area-inset-bottom)+88px)] md:bottom-4 z-10"><Button variant="primary" size="lg" className="w-full shadow-2xl" onClick={save}>Сохранить настройки</Button></div>
 
       <Section title="Данные и резервные копии">
         <div className="text-sm text-muted">Хранилище: {repo.kind === 'supabase' ? 'облако Supabase (синхронизация между устройствами)' : 'на этом устройстве (IndexedDB)'}.</div>

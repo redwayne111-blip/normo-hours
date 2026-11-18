@@ -9,20 +9,21 @@ import { fmtAW, fmtHours, fmtMoney, roundDiv } from '@/lib/money'
 import { useStore } from '@/store'
 
 const rub = (kop: number) => roundDiv(kop, 100)
-const tip = { contentStyle: { background: 'var(--card)', border: '1px solid var(--line)', borderRadius: 12, color: 'var(--fg)' }, labelStyle: { color: 'var(--muted)' }, cursor: { fill: 'var(--line)' } }
+const tip = { contentStyle: { background: 'var(--elev)', border: '1px solid var(--line-strong)', borderRadius: 14, color: 'var(--fg)', boxShadow: '0 12px 32px -8px rgba(0,0,0,.5)' }, labelStyle: { color: 'var(--muted)', fontWeight: 600 }, cursor: { fill: 'var(--line)' } }
+const legend = { iconType: 'circle' as const, iconSize: 8, formatter: (v: string) => <span style={{ color: 'var(--muted)', fontSize: 12, fontWeight: 600 }}>{v}</span> }
 const axis = { stroke: 'var(--muted)', fontSize: 12, tickLine: false, axisLine: false } as const
 
-function Kpi({ label, value, sub, tone }: { label: string; value: string; sub?: string; tone?: 'money' | 'accent' }) {
+function Kpi({ label, value, sub, tone, wide }: { wide?: boolean; label: string; value: string; sub?: string; tone?: 'money' | 'accent' }) {
   return (
-    <Card className="p-4">
-      <div className="text-xs text-muted">{label}</div>
-      <div className={`text-xl md:text-2xl font-bold mt-1 tnum ${tone === 'money' ? 'text-money' : tone === 'accent' ? 'text-accent' : ''}`}>{value}</div>
+    <Card className={`p-4 ${wide ? 'col-span-2 lg:col-span-1' : ''} ${tone === 'money' ? 'col-span-2 !border-money/30 bg-gradient-to-br from-money/15 to-transparent' : tone === 'accent' ? '!border-accent/30 bg-gradient-to-br from-accent/15 to-transparent' : ''}`}>
+      <div className="eyebrow !normal-case !tracking-normal !text-xs !font-semibold">{label}</div>
+      <div className={`num-display mt-2 ${tone === 'money' ? 'text-4xl text-grad-money' : 'text-2xl'} ${tone === 'accent' ? 'text-accent' : ''}`}>{value}</div>
       {sub && <div className="text-xs text-muted mt-0.5 truncate">{sub}</div>}
     </Card>
   )
 }
 const ChartCard = ({ title, children }: { title: string; children: React.ReactNode }) => (
-  <Card className="p-4"><h3 className="font-bold mb-3">{title}</h3><div className="h-64">{children}</div></Card>
+  <Card className="p-4"><h3 className="font-extrabold tracking-tight mb-3">{title}</h3><div className="h-64">{children}</div></Card>
 )
 
 export function StatsPage() {
@@ -65,7 +66,7 @@ export function StatsPage() {
   const bestDay = daily.reduce<(typeof daily)[number] | null>((b, d) => (!b || d.total > b.total ? d : b), null)
   const workDays = sum.days.work
   const hasData = sum.orderCount > 0 || sum.salaryKop > 0
-  const pie = [{ name: 'Оклад', value: rub(sum.salaryKop), c: 'var(--accent)' }, { name: 'Нормо-часы', value: rub(sum.normKop), c: 'var(--money)' }].filter((x) => x.value > 0)
+  const pie = [{ name: 'Оклад', value: rub(sum.salaryKop), c: 'var(--cool)' }, { name: 'Нормо-часы', value: rub(sum.normKop), c: 'var(--money)' }].filter((x) => x.value > 0)
 
   return (
     <div className="space-y-5">
@@ -84,7 +85,7 @@ export function StatsPage() {
             <Kpi label="Средний заработок за рабочий день" value={workDays ? fmtMoney(roundDiv(sum.totalKop, workDays), cur) : '—'} />
             <Kpi label="Среднее AW за рабочий день" value={workDays ? fmtAW(roundDiv(sum.aw100, workDays)) : '—'} />
             <Kpi label="Самый прибыльный день" value={bestDay && bestDay.total > 0 ? fmtMoney(bestDay.total, cur) : '—'} sub={bestDay && bestDay.total > 0 ? formatDayLong(bestDay.date) : undefined} />
-            <Kpi label="Самый прибыльный заказ" value={bestOrder ? fmtMoney(bestOrder.earningsKop, cur) : '—'}
+            <Kpi wide label="Самый прибыльный заказ" value={bestOrder ? fmtMoney(bestOrder.earningsKop, cur) : '—'}
               sub={bestOrder ? `${[bestOrder.brand, bestOrder.model].join(' ')} · ${formatDate(bestOrder.date, settings.dateFormat)}` : undefined} />
           </div>
 
@@ -92,12 +93,12 @@ export function StatsPage() {
             <ChartCard title="Заработок по дням">
               <ResponsiveContainer><BarChart data={daily}><CartesianGrid stroke="var(--line)" vertical={false} /><XAxis dataKey="label" {...axis} interval="preserveStartEnd" /><YAxis {...axis} width={44} />
                 <Tooltip {...tip} formatter={(v) => `${Number(v).toLocaleString('ru-RU')} ${cur}`} labelFormatter={(_, pl) => (pl?.[0] ? formatDayLong(pl[0].payload.date) : '')} />
-                <Legend /><Bar dataKey="salary" name="Оклад" stackId="a" fill="var(--accent)" /><Bar dataKey="norm" name="Нормо-часы" stackId="a" fill="var(--money)" radius={[4, 4, 0, 0]} /></BarChart></ResponsiveContainer>
+                <Legend {...legend} /><Bar dataKey="salary" name="Оклад" stackId="a" fill="var(--cool)" /><Bar dataKey="norm" name="Нормо-часы" stackId="a" fill="var(--money)" radius={[4, 4, 0, 0]} /></BarChart></ResponsiveContainer>
             </ChartCard>
             <ChartCard title="Заработок по неделям">
               <ResponsiveContainer><BarChart data={weekly}><CartesianGrid stroke="var(--line)" vertical={false} /><XAxis dataKey="label" {...axis} /><YAxis {...axis} width={44} />
                 <Tooltip {...tip} formatter={(v) => `${Number(v).toLocaleString('ru-RU')} ${cur}`} labelFormatter={(l) => `Неделя с ${l}`} />
-                <Legend /><Bar dataKey="salary" name="Оклад" stackId="a" fill="var(--accent)" /><Bar dataKey="norm" name="Нормо-часы" stackId="a" fill="var(--money)" radius={[4, 4, 0, 0]} /></BarChart></ResponsiveContainer>
+                <Legend {...legend} /><Bar dataKey="salary" name="Оклад" stackId="a" fill="var(--cool)" /><Bar dataKey="norm" name="Нормо-часы" stackId="a" fill="var(--money)" radius={[4, 4, 0, 0]} /></BarChart></ResponsiveContainer>
             </ChartCard>
             <ChartCard title="Динамика AW">
               <ResponsiveContainer><LineChart data={daily}><CartesianGrid stroke="var(--line)" vertical={false} /><XAxis dataKey="label" {...axis} interval="preserveStartEnd" /><YAxis {...axis} width={36} />
@@ -107,7 +108,7 @@ export function StatsPage() {
             <ChartCard title="Сравнение месяцев">
               <ResponsiveContainer><BarChart data={months}><CartesianGrid stroke="var(--line)" vertical={false} /><XAxis dataKey="label" {...axis} /><YAxis {...axis} width={44} />
                 <Tooltip {...tip} formatter={(v) => `${Number(v).toLocaleString('ru-RU')} ${cur}`} />
-                <Legend /><Bar dataKey="salary" name="Оклад" stackId="a" fill="var(--accent)" /><Bar dataKey="norm" name="Нормо-часы" stackId="a" fill="var(--money)" radius={[4, 4, 0, 0]} /></BarChart></ResponsiveContainer>
+                <Legend {...legend} /><Bar dataKey="salary" name="Оклад" stackId="a" fill="var(--cool)" /><Bar dataKey="norm" name="Нормо-часы" stackId="a" fill="var(--money)" radius={[4, 4, 0, 0]} /></BarChart></ResponsiveContainer>
             </ChartCard>
             <ChartCard title="Оклад и нормо-часы">
               <ResponsiveContainer><PieChart><Pie data={pie} dataKey="value" nameKey="name" innerRadius="55%" outerRadius="80%" paddingAngle={3} stroke="none"
