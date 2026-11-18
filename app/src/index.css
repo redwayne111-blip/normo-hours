@@ -1,0 +1,69 @@
+@import "tailwindcss";
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-card: var(--card);
+  --color-sec: var(--sec);
+  --color-fg: var(--fg);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-accent: var(--accent);
+  --color-money: var(--money);
+  --color-danger: var(--danger);
+  --color-warn: var(--warn);
+  --color-offday: var(--offday);
+  --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, system-ui, sans-serif;
+}
+
+:root, .dark {
+  --bg: #101727;
+  --card: #1b2740;
+  --sec: #111827;
+  --fg: #e5eaf5;
+  --muted: #94a3b8;
+  --line: rgba(148, 163, 184, 0.16);
+  --accent: #f79324;
+  --money: #269f60;
+  --danger: #ef4444;
+  --warn: #d9a521;
+  --offday: #22335a;
+  color-scheme: dark;
+}
+.light {
+  --bg: #f1f5f9;
+  --card: #ffffff;
+  --sec: #e8edf5;
+  --fg: #0f172a;
+  --muted: #5b6b82;
+  --line: rgba(15, 23, 42, 0.12);
+  --accent: #e07b0a;
+  --money: #1b8a4f;
+  --danger: #dc2626;
+  --warn: #b7830f;
+  --offday: #dfe6f3;
+  color-scheme: light;
+}
+
+html, body, #root { min-height: 100%; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-sans);
+  -webkit-tap-highlight-color: transparent;
+  -webkit-font-smoothing: antialiased;
+}
+button { font: inherit; cursor: pointer; }
+input, select, textarea { font: inherit; }
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-thumb { background: var(--line); border-radius: 8px; }
+
+@keyframes fade-in { from { opacity: 0 } to { opacity: 1 } }
+@keyframes slide-up { from { transform: translateY(24px); opacity: 0 } to { transform: none; opacity: 1 } }
+@keyframes pop { from { transform: scale(.96); opacity: 0 } to { transform: none; opacity: 1 } }
+.anim-fade { animation: fade-in .18s ease-out; }
+.anim-up { animation: slide-up .22s ease-out; }
+.anim-pop { animation: pop .18s ease-out; }
+.tnum { font-variant-numeric: tabular-nums; }
+.safe-b { padding-bottom: env(safe-area-inset-bottom); }
+.safe-t { padding-top: env(safe-area-inset-top); }
