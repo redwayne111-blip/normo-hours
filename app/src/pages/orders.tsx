@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { Camera, ClipboardList, Image as ImageIcon, Plus, Search, SlidersHorizontal } from 'lucide-react'
+import { Camera, ClipboardList, FileText, Image as ImageIcon, Plus, Search, SlidersHorizontal } from 'lucide-react'
 import { Button, Card, Empty, Input } from '@/components/ui'
 import { PeriodBar, usePeriod } from '@/components/period'
 import { OrderCard } from '@/components/order-card'
@@ -56,14 +56,16 @@ export function OrdersPage() {
         )}
       </section>
 
-      <div className="grid grid-cols-5 gap-2.5">
-        <Button variant="primary" size="lg" className="col-span-3 md:col-span-2" onClick={() => mgr.openNew()}><Plus size={20} />Добавить заказ</Button>
+      <div className="grid grid-cols-6 gap-2.5">
+        <Button variant="primary" size="lg" className="col-span-3 md:col-span-2" onClick={() => mgr.openNew()}><Plus size={20} /><span className="whitespace-nowrap">Добавить<span className="hidden md:inline"> заказ</span></span></Button>
         <label className="col-span-2 md:col-span-1 contents">
           <input id="cam" type="file" accept="image/*" capture="environment" hidden onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ''; if (f) mgr.fromPhoto(f) }} />
           <input id="gal" type="file" accept="image/*" hidden onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ''; if (f) mgr.fromPhoto(f) }} />
+          <input id="pdf" type="file" accept="application/pdf,.pdf" hidden onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ''; if (f) mgr.fromPdf(f) }} />
         </label>
         <Button size="lg" className="col-span-1 md:col-span-1 px-2" onClick={() => document.getElementById('cam')?.click()} aria-label="Сфотографировать заказ"><Camera size={20} /><span className="hidden md:inline">Сфотографировать</span></Button>
         <Button size="lg" className="col-span-1 md:col-span-1 px-2" onClick={() => document.getElementById('gal')?.click()} aria-label="Из галереи"><ImageIcon size={20} /><span className="hidden md:inline">Из галереи</span></Button>
+        <Button size="lg" className="col-span-1 md:col-span-1 px-2" onClick={() => document.getElementById('pdf')?.click()} aria-label="Загрузить PDF"><FileText size={20} /><span className="hidden md:inline">PDF</span></Button>
       </div>
 
       <div className="flex gap-2">

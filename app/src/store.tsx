@@ -64,7 +64,7 @@ export function StoreProvider({ repo, signOut, children }: { repo: Repository; s
     if (!snap) return
     document.documentElement.classList.toggle('dark', snap.settings.theme === 'dark')
     document.documentElement.classList.toggle('light', snap.settings.theme === 'light')
-    document.querySelector('meta[name=theme-color]')?.setAttribute('content', snap.settings.theme === 'dark' ? '#101727' : '#f1f5f9')
+    document.querySelector('meta[name=theme-color]')?.setAttribute('content', snap.settings.theme === 'dark' ? '#000000' : '#f2f2f7')
   }, [snap?.settings.theme])
 
   // Обёртка: сначала пишем в хранилище, при ошибке — сообщение и перечитывание данных.
