@@ -15,6 +15,8 @@ const BRANDS = ['BMW', 'Audi', 'Mercedes-Benz', 'Mercedes', 'Toyota', 'Kia', 'Hy
 
 const PLATE = /[АВЕКМНОРСТУХABEKMHOPCTYX0]\s?\d{3}\s?[АВЕКМНОРСТУХABEKMHOPCTYX]{2}\s?\d{2,3}/i
 const LATIN_TO_CYR: Record<string, string> = { A: 'А', B: 'В', E: 'Е', K: 'К', M: 'М', H: 'Н', O: 'О', P: 'Р', C: 'С', T: 'Т', Y: 'У', X: 'Х', '0': 'О' }
+const CODE = /\bSERV[\dOОo]{2,}\b/i
+const stripToCode = (l: string) => { const m = l.match(CODE); return m ? l.slice((m.index ?? 0) + m[0].length).trim() : l }
 const VIN = /\b[A-HJ-NPR-Z0-9]{17}\b/
 // Строка работы в таблице сервисного заказа: [код] описание AW к-во AW-значение цена ...
 const AW_ROW = /^(?:[A-Z]{2,}\d+\s+)?(.+?)\s+[AА]W\s+(\d+[.,]\d{1,2})\s+(\d+(?:[.,]\d+)?)(?=\s|$)/
@@ -44,7 +46,7 @@ export function parseOrderText(text: string): ParsedOrder {
   // Строки таблицы с единицей «AW»: AW берём из колонки AW, умножая на количество
   let tableAw100 = 0
   const tableJobs: string[] = []
-  for (const l of lines) {
+  for (const l of lines.map(stripToCode)) {
     const m = l.match(AW_ROW)
     if (!m) continue
     const qty = num100(m[2])
@@ -91,7 +93,8 @@ export function parseOrderText(text: string): ParsedOrder {
     }
   }
 
-  out.jobs = tableJobs.length ? tableJobs : lines
+  const codedJobs = lines.filter((l) => CODE.test(l)).map((l) => sentenceCase(stripToCode(l).split(/\s+[AА]W\b|\s+\d+[.,]\d{2}\b/)[0].replace(/[\s|_\\/]+$/, '').trim())).filter((l) => l.length > 3)
+  out.jobs = tableJobs.length ? tableJobs : codedJobs.length ? codedJobs : lines
     .filter((l) => l !== carLine && !SKIP.test(l) && (l.match(/[а-яё]/gi)?.length ?? 0) >= 4)
     .map((l) => l.replace(/^[^а-яёa-z]+/i, '').replace(/^[a-z]\s{2,}/i, '').replace(/[\s|_\\/]+$/, '').replace(/\s{2,}/g, ' ').trim())
     .filter((l) => l && !/^(работы|выполненные работы|наименование работ)\s*:?$/i.test(l))
