@@ -15,7 +15,7 @@ BMW 3 серии, A123BC777
     expect(r.number).toBe('12345678')
     expect(r.brand).toBe('BMW')
     expect(r.model).toBe('3 серии')
-    expect(r.plate).toBe('A123BC777')
+    expect(r.plate).toBe('А123ВС777')
   })
   it('находит AW, часы, сумму', () => {
     expect(r.aw100).toBe(13600)
@@ -30,5 +30,34 @@ BMW 3 серии, A123BC777
     expect(e.number).toBeUndefined()
     expect(e.aw100).toBeUndefined()
     expect(e.plate).toBeUndefined()
+  })
+})
+
+describe('сервисный заказ дилера (таблица с AW)', () => {
+  const text = `Сертифиц. центр BMW M
+Официальный дилер BMW
+Заказ Номер : 87654321
+Заказ Но. : 87654321
+Марка BSP Контракт Номер
+Модель VIN
+Е456КХ777
+BMW
+X7 WBA21EN0709W27606 64 324
+SERV009 РЕГУЛИРОВКА УГЛОВ УСТАНОВКИ КОЛЕС AW 1,00 23 303,03 22,00 0,00 6 981,82
+SERV002 МОЙКА/УБОРКА ПОДКАПОТНОГО ПРОСТРАНСТВА AW 1,00 10 351,41 22,00 0,00 3 500,00
+SERV021 Разработка рулевых тяг AW 1,00 62 621,13 22,00 0,00 38 534,68
+33306760349 Гайка с буртиком самоконтрящаяся (мин. парт. 10шт) шт 2,00 195,89 22,00 0,00 391,78
+Всего RUB 127 566,02`
+  const r = parseOrderText(text)
+  it('номер, авто, госномер', () => {
+    expect(r.number).toBe('87654321')
+    expect(r.brand).toBe('BMW')
+    expect(r.model).toBe('X7')
+    expect(r.plate).toBe('Е456КХ777')
+  })
+  it('сумма AW по строкам работ, без цены клиента', () => {
+    expect(r.aw100).toBe(9500)
+    expect(r.earningsKop).toBeUndefined()
+    expect(r.jobs).toEqual(['Регулировка углов установки колес', 'Мойка/уборка подкапотного пространства', 'Разработка рулевых тяг'])
   })
 })
