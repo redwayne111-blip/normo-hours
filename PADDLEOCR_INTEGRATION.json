@@ -2,5 +2,5 @@
   "name": "@paddleocr/paddleocr-js",
   "private": true,
   "version": "0.0.0-paddleocr-browser",
-  "description": "Temporary marker: replace app/package.json dependencies before full integration"
+  "description": "PaddleOCR browser integration checkpoint"
 }
