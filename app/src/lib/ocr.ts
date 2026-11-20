@@ -4,7 +4,7 @@ import { parseOrderText, type ParsedOrder } from './ocrParse'
 
 const base = () => new URL('vendor/', document.baseURI).href
 
-/** Угол наклона строк (радианы): перебор углов, максимум «резкости» горизонтальной проекции чёрных пикселей. */
+/** Угол наклона строк (радианы): перебор углов, максимум резкости горизонтальной проекции чёрных пикселей. */
 function estimateSkew(_gray: Uint8ClampedArray, d: Uint8ClampedArray, w: number, h: number): number {
   const step = Math.max(1, Math.round(Math.max(w, h) / 900))
   const xs: number[] = [], ys: number[] = []
@@ -37,7 +37,7 @@ function rotateCanvas(src: HTMLCanvasElement, angle: number): HTMLCanvasElement 
   return c
 }
 
-/** Подготовка фото для OCR: увеличение, серый, растяжение контраста и адаптивная бинаризация (убирает тени и неровный свет). */
+/** Подготовка фото для локального OCR: увеличение, серый, контраст и адаптивная бинаризация. */
 export async function preprocessForOcr(file: Blob, target = 2600): Promise<Blob> {
   const bmp = await createImageBitmap(file)
   const k = Math.min(2.5, target / Math.max(bmp.width, bmp.height))
@@ -66,9 +66,7 @@ export async function preprocessForOcr(file: Blob, target = 2600): Promise<Blob>
       const x0 = Math.max(0, x - r), x1 = Math.min(w, x + r + 1)
       const sum = integral[y1 * W + x1] - integral[y0 * W + x1] - integral[y1 * W + x0] + integral[y0 * W + x0]
       const mean = sum / ((x1 - x0) * (y1 - y0))
-      // выравниваем фон по локальной яркости: текст темнеет, светло-серые шапки таблиц остаются светлыми
       const ratio = gray[y * w + x] / (mean || 1)
-      // область темнее бумаги (фон за листом, тени, ладонь) — не текст
       const v = mean < bright * 0.55 ? 255 : Math.max(0, Math.min(255, Math.round(((ratio - 0.5) / 0.42) * 255)))
       const o = (y * w + x) * 4
       d[o] = d[o + 1] = d[o + 2] = v; d[o + 3] = 255
@@ -102,34 +100,28 @@ async function cropTable(blob: Blob, words: OcrWord[]): Promise<{ blob: Blob } |
 
 const sentence = (t: string) => { const l = t.replace(/[^а-яёa-z]/gi, ''); return l && l === l.toUpperCase() ? t.charAt(0) + t.slice(1).toLowerCase() : t }
 
-/** Локальный OCR (Tesseract.js, rus+eng). Данные языка и ядро лежат в public/vendor — работает офлайн. */
+/** Локальный OCR (Tesseract.js, rus+eng) — резервный вариант, работает офлайн. */
 export async function recognizeLocal(image: Blob, onProgress?: (p: number) => void): Promise<ParsedOrder> {
   const { createWorker } = await import('tesseract.js').catch(() => {
     if (!sessionStorage.getItem('ocr-reload')) { sessionStorage.setItem('ocr-reload', '1'); location.reload() }
     throw new Error('Приложение обновилось — страница перезагружается, повторите попытку')
   })
   const worker = await createWorker(['rus', 'eng'], 1, {
-    workerPath: base() + 'worker.min.js',
-    corePath: base(),
-    langPath: base(),
-    gzip: true,
+    workerPath: base() + 'worker.min.js', corePath: base(), langPath: base(), gzip: true,
     logger: (m: { status: string; progress: number }) => { if (m.status === 'recognizing text') onProgress?.(m.progress) },
   })
   try {
     await worker.setParameters({ tessedit_pageseg_mode: '6' as never, preserve_interword_spaces: '1' })
     const prepared = await preprocessForOcr(image).catch((e) => { console.debug('[ocr] preprocess failed', e); return image })
-    console.debug('[ocr] prepared', prepared.size, prepared === image ? 'original' : 'processed')
     const { data } = await worker.recognize(prepared)
     const words = ((data as unknown as { words?: OcrWord[] }).words ?? [])
     const lines = wordsToLines(words)
     const parsed = parseOrderText(lines.length ? lines.join('\n') : data.text)
     let table = extractAwTable(words)
-    // мелкий текст таблицы: вырезаем её и распознаём второй раз в увеличенном виде
     const crop = await cropTable(prepared, words).catch(() => null)
     if (crop) {
       const second = ((await worker.recognize(crop.blob)).data as unknown as { words?: OcrWord[] }).words ?? []
       const t2 = extractAwTable(second)
-      console.debug('[ocr] table pass', table.length, '->', t2.length)
       if (t2.length >= table.length) table = t2
     }
     if (table.length) {
@@ -138,46 +130,44 @@ export async function recognizeLocal(image: Blob, onProgress?: (p: number) => vo
       parsed.earningsKop = undefined
     }
     return parsed
-  } finally {
-    await worker.terminate()
-  }
+  } finally { await worker.terminate() }
 }
 
-const blobToDataUrl = (b: Blob) => new Promise<string>((res, rej) => {
-  const r = new FileReader(); r.onload = () => res(r.result as string); r.onerror = () => rej(r.error); r.readAsDataURL(b)
-})
-
-/** Необязательное облачное распознавание (OpenAI Vision) — точнее Tesseract; включается ключом в настройках. */
-export async function recognizeCloud(image: Blob, apiKey: string): Promise<ParsedOrder> {
-  const url = await blobToDataUrl(await compressImage(image, 2000, 0.9))
-  const r = await fetch('https://api.openai.com/v1/chat/completions', {
+/** OCR.space: фото отправляется внешнему сервису. API-ключ берётся из существующего поля настроек. */
+export async function recognizeOcrSpace(image: Blob, apiKey: string): Promise<ParsedOrder> {
+  const form = new FormData()
+  form.append('file', image, image instanceof File ? image.name : 'order-image.png')
+  form.append('language', 'rus')
+  form.append('OCREngine', '2')
+  form.append('scale', 'true')
+  form.append('isOverlayRequired', 'false')
+  const response = await fetch('https://api.ocr.space/parse/image', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + apiKey },
-    body: JSON.stringify({
-      model: 'gpt-4o-mini', response_format: { type: 'json_object' },
-      messages: [{ role: 'user', content: [
-        { type: 'text', text: 'Это фото заказ-наряда автосервиса. Верни JSON: {"number": строка|null, "brand": строка|null, "model": строка|null, "plate": строка|null, "jobs": [{"title": строка, "aw": число|null}] (по каждой работе — её AW), "aw": число|null, "hours": число|null, "sum": число|null}. Ничего не выдумывай: нет в документе — null.' },
-        { type: 'image_url', image_url: { url } },
-      ] }],
-    }),
+    headers: { apikey: apiKey },
+    body: form,
   })
-  const j = await r.json()
-  if (!r.ok) throw new Error(j.error?.message ?? String(r.status))
-  const o = JSON.parse(j.choices[0].message.content)
-  const n100 = (v: unknown) => (v == null || v === '' || isNaN(Number(v)) ? undefined : Math.round(Number(v) * 100))
-  return {
-    number: o.number ? String(o.number) : undefined, brand: o.brand || undefined, model: o.model || undefined,
-    plate: o.plate || undefined, jobs: Array.isArray(o.jobs) ? o.jobs.map((j: unknown) => typeof j === 'string' ? { title: j } : { title: String((j as { title?: unknown }).title ?? ''), aw100: n100((j as { aw?: unknown }).aw) }).filter((j: { title: string }) => j.title) : [],
-    aw100: n100(o.aw), hours100: n100(o.hours), earningsKop: n100(o.sum),
+  const result = await response.json() as {
+    IsErroredOnProcessing?: boolean
+    ErrorMessage?: string | string[]
+    ParsedResults?: Array<{ ParsedText?: string }>
   }
+  if (!response.ok) throw new Error(`OCR.space: HTTP ${response.status}`)
+  if (result.IsErroredOnProcessing) {
+    const detail = Array.isArray(result.ErrorMessage) ? result.ErrorMessage.join(', ') : result.ErrorMessage
+    throw new Error(detail || 'сервис не смог обработать изображение')
+  }
+  const text = (result.ParsedResults ?? []).map((page) => page.ParsedText ?? '').filter(Boolean).join('\n')
+  if (!text.trim()) throw new Error('OCR.space не вернул распознанный текст')
+  return parseOrderText(text)
 }
 
-export async function recognize(image: Blob, openaiKey: string, onProgress?: (p: number) => void): Promise<{ data: ParsedOrder; engine: string; note?: string }> {
-  if (openaiKey) {
-    try { return { data: await recognizeCloud(image, openaiKey), engine: 'нейросеть' } }
+/** OCR.space предпочтителен при заданном ключе; при ошибке используется локальный Tesseract. */
+export async function recognize(image: Blob, apiKey: string, onProgress?: (p: number) => void): Promise<{ data: ParsedOrder; engine: string; note?: string }> {
+  if (apiKey) {
+    try { return { data: await recognizeOcrSpace(image, apiKey), engine: 'OCR.space' } }
     catch (e) {
       const data = await recognizeLocal(image, onProgress)
-      return { data, engine: 'Tesseract', note: 'Облачное распознавание не сработало (' + (e as Error).message + ')' }
+      return { data, engine: 'Tesseract', note: 'OCR.space не сработал (' + (e as Error).message + '); использован локальный OCR.' }
     }
   }
   return { data: await recognizeLocal(image, onProgress), engine: 'Tesseract' }
